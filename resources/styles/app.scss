@@ -1,0 +1,11 @@
+@use "./abstracts/bases";
+@use "./abstracts/global";
+
+@use "./components/synctrack-header";
+@use "./components/synctrack-sidemenu";
+
+@use "./layouts/hsxxx-layout";
+@use "./layouts/xxxxx-layout";
+
+@use "./pages/login";
+@use "./pages/project";

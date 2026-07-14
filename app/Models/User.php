@@ -1,32 +1,45 @@
 <?php
-
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
-{
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
+#[Fillable(["fullname", "username", "identifier", "email", "password", "nric", "contact", "is_admin"])]
+#[Hidden(["password", "remember_token"])]
+class User extends Authenticatable {
+    use Notifiable, SoftDeletes;
+    
+    protected function casts(): array {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            "id" => "integer",
+            "fullname" => "string",
+            "username" => "string",
+            "identifier" => "string",
+            "email" => "string",
+            "password" => "hashed",
+            "nric" => "string",
+            "contact" => "string",
+            "is_admin" => "boolean",
         ];
+    }
+    
+    public function projects(): HasMany {
+        return $this->hasMany(Project::class, "creator_id");
+    }
+    
+    public function members(): HasMany {
+        return $this->hasMany(Member::class, "user_id");
+    }
+    
+    public function tasks(): HasMany {
+        return $this->hasMany(Task::class, "assignee_id");
+    }
+    
+    public function subTasks(): HasMany {
+        return $this->hasMany(SubTask::class, "assignee_id");
     }
 }

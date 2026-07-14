@@ -1,0 +1,16 @@
+/*
+|--------------------------------------------------------------------------
+| Base Reset Module
+|--------------------------------------------------------------------------
+|
+| Establishes a clean, predictable foundation by resetting default
+| browser styles across all HTML elements. Ensures consistent rendering
+| regardless of user agent stylesheet variations.
+|
+*/
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
