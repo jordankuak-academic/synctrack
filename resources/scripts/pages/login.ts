@@ -15,6 +15,30 @@ export default class LoginController extends Controller {
 
     const confirmation = this.querySelector<HTMLInputElement>("#signup-password-confirmation");
     confirmation?.addEventListener("input", () => confirmation.setCustomValidity(""));
+
+    this.querySelectorAll<HTMLElement>(".password-toggle-icon").forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const inputId = toggle.dataset.togglePassword;
+        if (!inputId) return;
+        const input = this.querySelector<HTMLInputElement>(`#${inputId}`);
+        if (!input) return;
+
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+
+        const eyeIcon = toggle.querySelector(".icon-eye");
+        const eyeOffIcon = toggle.querySelector(".icon-eye-off");
+        if (eyeIcon && eyeOffIcon) {
+          if (input.type === "password") {
+            eyeIcon.classList.add("hidden");
+            eyeOffIcon.classList.remove("hidden");
+          } else {
+            eyeIcon.classList.remove("hidden");
+            eyeOffIcon.classList.add("hidden");
+          }
+        }
+      });
+    });
   }
 
   private setAuthMode(mode: AuthMode): void {
@@ -56,3 +80,6 @@ export default class LoginController extends Controller {
     });
   }
 }
+
+
+
