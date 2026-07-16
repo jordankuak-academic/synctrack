@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->foreignId("task_id")->constrained("tasks")->onDelete("cascade");
             $table->foreignId("assignee_id")->nullable()->constrained("users")->nullOnDelete();
             $table->string("title");
-            $table->datetime("due_date")->nullable();
+            $table->date("due_date")->nullable();
             $table->enum("priority", ["low", "medium", "high"])->default("medium")->nullable();
             $table->enum("status", ["draft", "in_progress", "completed"])->default("draft");
             $table->timestamps();
