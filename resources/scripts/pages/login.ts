@@ -1,83 +1,97 @@
 import Controller from "@/utils/controller";
 
-type AuthMode = "login" | "signup";
-
 export default class LoginController extends Controller {
   protected initialize(): void {
-    this.querySelectorAll<HTMLButtonElement>("[data-auth-tab]").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        this.setAuthMode(tab.dataset.authTab as AuthMode);
-      });
-    });
-
-    const nextButton = this.querySelector<HTMLButtonElement>("[data-signup-next]");
-    nextButton?.addEventListener("click", () => this.showSecondSignupStep());
-
-    const confirmation = this.querySelector<HTMLInputElement>("#signup-password-confirmation");
-    confirmation?.addEventListener("input", () => confirmation.setCustomValidity(""));
-
-    this.querySelectorAll<HTMLElement>(".password-toggle-icon").forEach((toggle) => {
-      toggle.addEventListener("click", () => {
-        const inputId = toggle.dataset.togglePassword;
-        if (!inputId) return;
-        const input = this.querySelector<HTMLInputElement>(`#${inputId}`);
-        if (!input) return;
-
-        const isPassword = input.type === "password";
-        input.type = isPassword ? "text" : "password";
-
-        const eyeIcon = toggle.querySelector(".icon-eye");
-        const eyeOffIcon = toggle.querySelector(".icon-eye-off");
-        if (eyeIcon && eyeOffIcon) {
-          if (input.type === "password") {
-            eyeIcon.classList.add("hidden");
-            eyeOffIcon.classList.remove("hidden");
-          } else {
-            eyeIcon.classList.remove("hidden");
-            eyeOffIcon.classList.add("hidden");
-          }
-        }
-      });
-    });
+    this.bindEvents();
   }
-
-  private setAuthMode(mode: AuthMode): void {
-    this.querySelectorAll<HTMLButtonElement>("[data-auth-tab]").forEach((tab) => {
-      const isActive = tab.dataset.authTab === mode;
-      tab.classList.toggle("login-card__tab--active", isActive);
-      tab.setAttribute("aria-selected", String(isActive));
-    });
-
-    this.querySelectorAll<HTMLElement>("[data-auth-panel]").forEach((panel) => {
-      panel.hidden = panel.dataset.authPanel !== mode;
-    });
-
-    this.querySelectorAll<HTMLButtonElement>("[data-auth-submit]").forEach((button) => {
-      button.hidden = button.dataset.authSubmit !== mode || (button.dataset.signupSubmit === "2");
-    });
+  
+  private bindEvents(): void {
+    this.changeTabNavigationEvent();
+    this.passwordToggleEvent();
+    this.changeNextFormEvent();
   }
-
-  private showSecondSignupStep(): void {
-    const password = this.querySelector<HTMLInputElement>("#signup-password");
-    const confirmation = this.querySelector<HTMLInputElement>("#signup-password-confirmation");
-    const stepOneFields = this.querySelectorAll<HTMLInputElement>("[data-signup-step='1'] input[required]");
-
-    if (password && confirmation) {
-      confirmation.setCustomValidity(password.value === confirmation.value ? "" : "Passwords do not match.");
-    }
-
-    const isValid = Array.from(stepOneFields).every((field) => field.reportValidity());
-    if (!isValid) {
+  
+  private changeTabNavigationEvent(): void {
+    const tabItems = this.querySelectorAll<HTMLDivElement>(".navigation-tab .tab-item");
+    const contentItems = [
+      this.querySelector<HTMLElement>(".sign-in-wrapper"),
+      this.querySelector<HTMLElement>(".sign-up-wrapper"),
+    ];
+    
+    if (tabItems.length !== contentItems.length || contentItems.includes(null)) {
       return;
     }
-
-    this.querySelectorAll<HTMLElement>("[data-signup-step]").forEach((step) => {
-      step.hidden = step.dataset.signupStep !== "2";
+    
+    tabItems.forEach((tabItem, index) => {
+      tabItem.addEventListener("click", () => {
+        tabItems.forEach((item) => item.classList.remove("active"));
+        contentItems.forEach((item) => item?.classList.remove("active"));
+        
+        tabItem.classList.add("active");
+        contentItems[index]?.classList.add("active");
+      });
     });
-
-    this.querySelectorAll<HTMLButtonElement>("[data-signup-submit]").forEach((button) => {
-      button.hidden = button.dataset.signupSubmit !== "2";
+  }
+  
+  private passwordToggleEvent(): void {
+    const toggleButtons = this.querySelectorAll<HTMLButtonElement>("[data-password-toggle]");
+    
+    toggleButtons.forEach((toggleButton) => {
+      toggleButton.addEventListener("click", () => {
+        const targetId = toggleButton.dataset.target;
+        
+        if (targetId == null) {
+          return;
+        }
+        
+        const targetInput = this.querySelector<HTMLInputElement>(`#${targetId}`);
+        
+        if (targetInput == null) {
+          return;
+        }
+        
+        const isVisible = targetInput.type === "text";
+        const nextType = isVisible ? "password" : "text";
+        const nextLabel = isVisible ? "Show password" : "Hide password";
+        
+        targetInput.type = nextType;
+        toggleButton.classList.toggle("is-visible", !isVisible);
+        toggleButton.setAttribute("aria-pressed", String(!isVisible));
+        toggleButton.setAttribute("aria-label", nextLabel);
+      });
     });
+  }
+  
+  private changeNextFormEvent(): void {
+    const signUpSteps = Array.from(this.querySelectorAll<HTMLElement>(".sign-up-wrapper .sign-up-step"));
+    const nextButton = this.querySelector<HTMLButtonElement>(".sign-up-wrapper .step-btn[type='button']");
+    
+    if (signUpSteps.length < 2 || nextButton == null) {
+      return;
+    }
+    
+    nextButton.addEventListener("click", () => {
+      const activeIndex = signUpSteps.findIndex((step) => step.classList.contains("active"));
+      const nextIndex = activeIndex + 1;
+      
+      if (activeIndex < 0 || nextIndex >= signUpSteps.length) {
+        return;
+      }
+      
+      this.animateSignUpStepTransition(signUpSteps[activeIndex], signUpSteps[nextIndex]);
+    });
+  }
+  
+  private animateSignUpStepTransition(currentStep: HTMLElement, nextStep: HTMLElement): void {
+    currentStep.classList.remove("is-leaving-left");
+    nextStep.classList.remove("is-entering-right");
+    nextStep.classList.add("active", "is-entering-right");
+    currentStep.classList.add("is-leaving-left");
+    
+    nextStep.addEventListener("animationend", () => {
+      currentStep.classList.remove("active", "is-leaving-left");
+      nextStep.classList.remove("is-entering-right");
+    }, { once: true });
   }
 }
 
