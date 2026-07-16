@@ -22,7 +22,7 @@ class SubTaskController extends Controller {
             "task_id" => "required|integer|exists:tasks,id",
             "assignee_id" => "nullable|integer|exists:users,id",
             "title" => "required|string|max:255",
-            "due_date" => "nullable|datetime",
+            "due_date" => "nullable|date",
             "priority" => "nullable|in:low,medium,high",
             "status" => "required|in:draft,in_progress,completed",
         ]);
@@ -53,7 +53,7 @@ class SubTaskController extends Controller {
             "task_id" => "prohibited",
             "assignee_id" => "nullable|integer|exists:users,id",
             "title" => "required|string|max:255",
-            "due_date" => "nullable|datetime",
+            "due_date" => "nullable|date",
             "priority" => "nullable|in:low,medium,high",
             "status" => "required|in:draft,in_progress,completed",
         ]);

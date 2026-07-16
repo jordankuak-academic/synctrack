@@ -4,144 +4,122 @@
 
 @section("contents")
   <div id="login-wrapper">
-    <section class="login-card" aria-labelledby="login-title">
-      <aside class="login-card__brand" aria-label="SyncTrack">
-        <img src="images/logo.png" alt="SyncTrack Logo">
-        <div class="login-card__logo" aria-hidden="true"></div>
-        <p>SyncTrack</p>
-      </aside>
-
-
-      <div class="login-card__content">
-        <div class="login-card__tabs" role="tablist" aria-label="Authentication options">
-          <button class="login-card__tab login-card__tab--active" type="button" role="tab" aria-selected="true"
-            aria-controls="login-panel" data-auth-tab="login">Sign In</button>
-          <button class="login-card__tab" type="button" role="tab" aria-selected="false" aria-controls="signup-panel"
-            data-auth-tab="signup">Sign Up</button>
-        </div>
-
-        <div class="login-card__forms">
-          <form id="login-panel" class="login-form" action="{{ route('login.submit') }}" method="POST" role="tabpanel"
-            data-auth-panel="login" autocomplete="off">
-            @csrf
-            <h1 id="login-title" class="display-l">Sign In</h1>
-
-            <div class="auth-form__field">
-              <label for="login-email">Email</label>
-              <input id="login-email" name="email" type="email" placeholder="you@example.com" autocomplete="off" required>
-            </div>
-
-            <div class="auth-form__field">
-              <label for="login-password">Password</label>
-              <div class="password-input-wrapper">
-                <input id="login-password" name="password" type="password" placeholder="*******************"
-                  autocomplete="new-password" required>
-                <span class="password-toggle-icon" data-toggle-password="login-password">
-                  <x-lucide-eye class="icon-eye hidden" />
-                  <x-lucide-eye-off class="icon-eye-off" />
-                </span>
-              </div>
-            </div>            
-
-            <input name="is_remember" type="hidden" value="0">
-          </form>
-
-          <form id="signup-panel" class="signup-form" action="{{ route('register.submit') }}" method="POST"
-            role="tabpanel" data-auth-panel="signup" hidden>
-            @csrf
-            <div class="signup-form__step" data-signup-step="1">
-              <h1>Sign Up</h1>
-              <p class="signup-form__subtitle">Step 1 : Create Your Account</p>
-
-              <div class="auth-form__field">
-                <label for="signup-email">Email</label>
-                <input id="signup-email" name="email" type="email" placeholder="you@example.com" autocomplete="email"
-                  required>
-              </div>
-
-              <div class="auth-form__field">
-                <label for="signup-username">Username</label>
-                <input id="signup-username" name="username" type="text" placeholder="Enter your username"
-                  autocomplete="username" required>
-              </div>
-
-              {{-- <div class="signup-form__passwords">
-                <div class="auth-form__field">
-                  <label for="signup-password">Password</label>
-                  <input id="signup-password" name="password" type="password" placeholder="Enter password"
-                    autocomplete="new-password" minlength="8" required>
-                </div>
-
-                <div class="auth-form__field">
-                  <label for="signup-password-confirmation">Confirm Password</label>
-                  <input id="signup-password-confirmation" name="password_confirmation" type="password"
-                    placeholder="Confirm password" autocomplete="new-password" minlength="8" required>
-                </div>
-              </div>
-            </div> --}}
-
-            {{-- ... 其他代码 (Sign Up Step 1) ... --}}
-            <div class="signup-form__passwords">
-              <div class="auth-form__field">
-                <label for="signup-password">Password</label>
-                {{-- 密码 wrapper --}}
-                <div class="password-input-wrapper">
-                  <input id="signup-password" name="password" type="password" placeholder="*******************"
-                    autocomplete="new-password" minlength="8" required>
-                  <span class="password-toggle-icon" data-toggle-password="signup-password">
-                    <x-lucide-eye class="icon-eye hidden" />
-                    <x-lucide-eye-off class="icon-eye-off" />
-                  </span>
-                </div>
-              </div>
-
-              <div class="auth-form__field">
-                <label for="signup-password-confirmation">Confirm Password</label>
-                {{-- 确认密码 wrapper --}}
-                <div class="password-input-wrapper">
-                  <input id="signup-password-confirmation" name="password_confirmation" type="password"
-                    placeholder="*******************" autocomplete="new-password" minlength="8" required>
-                  <span class="password-toggle-icon" data-toggle-password="signup-password-confirmation">
-                    <x-lucide-eye class="icon-eye hidden" />
-                    <x-lucide-eye-off class="icon-eye-off" />
-                  </span>
-                </div>
-              </div>
-            </div>
+    <div class="login-card login-card--split">
+      <div class="left-section">
+        <div class="logo-wrapper"></div>
+        <div class="heading-02 application-title">SyncTrack</div>
+      </div>
+      <div class="right-section">
+        <div class="navigation-tab">
+          <div class="tab-item active">
+            <span class="sign-in-text">Sign In</span>
           </div>
-
-          <div class="signup-form__step" data-signup-step="2" hidden>
-              <h1>Sign Up</h1>
-              <p class="signup-form__subtitle">Step 2 : Personal Information</p>
-
-              <div class="auth-form__field">
-                <label for="signup-fullname">Full Name</label>
-                <input id="signup-fullname" name="fullname" type="text" placeholder="Enter your full name"
-                  autocomplete="name" required>
-              </div>
-
-              <div class="auth-form__field">
-                <label for="signup-nric">NRIC</label>
-                <input id="signup-nric" name="nric" type="text" placeholder="Enter your NRIC" required>
-              </div>
-
-              <div class="auth-form__field">
-                <label for="signup-contact">Contact Number</label>
-                <input id="signup-contact" name="contact" type="tel" placeholder="Enter your contact number"
-                  autocomplete="tel" required>
-              </div>
-            </div>
-          </form>
+          <div class="tab-item">
+            <span class="sign-up-text">Sign Up</span>
+          </div>
         </div>
-
-        <div class="login-card__submit-area">
-          <button class="auth-form__submit" type="submit" form="login-panel" data-auth-submit="login">Sign In</button>
-          <button class="auth-form__submit" type="button" data-auth-submit="signup" data-signup-submit="1"
-            data-signup-next hidden>Next</button>
-          <button class="auth-form__submit" type="submit" form="signup-panel" data-auth-submit="signup"
-            data-signup-submit="2" hidden>Sign Up</button>
+        <div class="navigation-content">
+          <div class="sign-in-wrapper active">
+            <h1 class="heading-01 form-title">Sign In</h1>
+            
+            <form action="{{ route("login.submit") }}" method="post">
+              @csrf
+              
+              <div class="form-group">
+                <label for="email" class="email-label">Email</label>
+                <input type="email" name="email" placeholder="you@example.com" value="{{ old("email") }}" required>
+              </div>
+              <div class="form-group">
+                <label for="login-password" class="password-label">Password</label>
+                <div class="password-field">
+                  <input id="login-password" type="password" name="password" placeholder="*******************" required>
+                  <button type="button" class="password-toggle" data-password-toggle data-target="login-password" aria-label="Show password" aria-pressed="false">
+                    <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                    <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                  </button>
+                </div>
+              </div>
+              
+              <input type="hidden" name="is_remember" value="0">
+              
+              <div class="form-group">
+                <button type="submit" class="sign-in-btn">Sign In</button>
+              </div>
+            </form>
+          </div>
+          <div class="sign-up-wrapper">
+            <h1 class="heading-01 form-title">Sign Up</h1>
+            
+            <div class="form-divider"></div>
+            
+            <form action="{{ route("register.submit") }}" method="post">
+              @csrf
+              <input type="hidden" name="identifier" value="">
+              
+              <div class="sign-up-step active">
+                <p class="step-title">Step 1 : Create Your Account</p>
+                
+                <div class="form-group">
+                  <label for="register-email">Email</label>
+                  <input id="register-email" type="email" name="email" placeholder="you@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-username">Username</label>
+                  <input id="register-username" type="text" name="username" placeholder="Enter Your Username" required>
+                </div>
+                
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <div class="password-field">
+                      <input id="register-password" type="password" name="password" placeholder="*******************" required>
+                      <button type="button" class="password-toggle" data-password-toggle data-target="register-password" aria-label="Show password" aria-pressed="false">
+                        <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                        <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="register-password-confirmation">Confirm Password</label>
+                    <div class="password-field">
+                      <input id="register-password-confirmation" type="password" name="password_confirmation" placeholder="*******************" required>
+                      <button type="button" class="password-toggle" data-password-toggle data-target="register-password-confirmation" aria-label="Show password" aria-pressed="false">
+                        <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                        <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <button type="button" class="step-btn">Next</button>
+              </div>
+              
+              <div class="sign-up-step">
+                <p class="step-title">Step 2 : Personal Information</p>
+                
+                <div class="form-group">
+                  <label for="register-fullname">Full Name</label>
+                  <input id="register-fullname" type="text" name="fullname" placeholder="Enter Your Full Name" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-nric">NRIC</label>
+                  <input id="register-nric" type="text" name="nric" placeholder="Enter Your NRIC" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-contact">Contact Number</label>
+                  <input id="register-contact" type="text" name="contact" placeholder="Enter Your Contact Number" required>
+                </div>
+                
+                <button type="submit" class="step-btn submit-btn">Sign Up</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 @endsection

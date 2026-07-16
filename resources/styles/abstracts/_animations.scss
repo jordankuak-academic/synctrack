@@ -8,3 +8,43 @@
 | transitions like fades, slides, and scaling effects.
 |
 */
+
+@keyframes slide-panel-exit-left {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  
+  to {
+    opacity: 0;
+    transform: translate3d(calc(var(--panel-slide-distance, 24px) * -1), 0, 0);
+  }
+}
+
+@keyframes slide-panel-enter-right {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--panel-slide-distance, 24px), 0, 0);
+  }
+  
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@mixin slide-panel-transition($distance: 24px, $duration: 320ms, $timing: cubic-bezier(0.16, 1, 0.3, 1)) {
+  --panel-slide-distance: #{$distance};
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  
+  &.is-leaving-left {
+    animation: slide-panel-exit-left $duration $timing both;
+    pointer-events: none;
+  }
+  
+  &.is-entering-right {
+    animation: slide-panel-enter-right $duration $timing both;
+  }
+}
