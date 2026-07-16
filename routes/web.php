@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthenticationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SubTaskController;
@@ -33,4 +34,6 @@ Route::middleware("auth")->group(function() {
     Route::post("/subtask", [SubTaskController::class, "store"])->name("subtask.store");
     Route::put("/subtask/{id}", [SubTaskController::class, "update"])->name("subtask.update");
     Route::delete("/subtask/{id}", [SubTaskController::class, "destroy"])->name("subtask.destroy");
+    
+    Route::get("/dashboard", [DashboardController::class, "index"])->name("dashboard");
 });

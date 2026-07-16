@@ -4,6 +4,12 @@
     
     $items = [
       [
+        "route_link" => "/dashboard",
+        "route_name" => "dashboard",
+        "menu_title" => "Dashboard",
+        "lucide_icon" => "layout-dashboard"
+      ],
+      [
         "route_link" => "/project",
         "route_name" => "project",
         "menu_title" => "Project",

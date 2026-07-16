@@ -33,7 +33,7 @@ class AuthenticationController extends Controller {
         if (Auth::attempt($credentials, $validated["is_remember"])) {
             $request->session()->regenerate();
             return redirect()
-                ->intended(route("project"))
+                ->intended(route("dashboard"))
                 ->with("response", $this->successResponse("Login Successfully. Welcome Back!"));
         }
         
@@ -74,7 +74,7 @@ class AuthenticationController extends Controller {
         $request->session()->regenerate();
         
         return redirect()
-            ->route("project")
+            ->route("dashboard")
             ->with("response", $this->successResponse("Registration Successful!"));
     }
     
