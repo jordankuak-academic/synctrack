@@ -1,0 +1,47 @@
+/*
+|--------------------------------------------------------------------------
+| Variables Module
+|--------------------------------------------------------------------------
+|
+| Centralized configuration for colors, typography, spacing, breakpoints,
+| z-index layers, and other design tokens used throughout the application.
+| Modifying values here ensures consistent updates across all components.
+|
+*/
+
+$font-family: "Inter", sans-serif;
+
+$primary-extra-dark: #1A2C7A;
+$primary-dark: #2B47C0;
+$primary: #4866E8;
+$primary-light: #617DFF;
+$primary-extra-light: #7B9BFF;
+
+$neutral-900: #11131A;
+$neutral-700: #343844;
+$neutral-500: #656B78;
+$neutral-300: #AEB3BD;
+$neutral-100: #E9EBEF;
+
+$danger-dark: #DC3545;
+$danger: #E85C63;
+$danger-light: #FF6B6B;
+
+$warning-dark: #FFC107;
+$warning: #FFCA36;
+$warning-light: #FFD166;
+
+$success-dark: #28A745;
+$success: #3DBA55;
+$success-light: #51CF66;
+
+$button-primary: #4A6CF7;
+$border-color: #DDE3F0;
+$placeholder: #9EA3B8;
+$background: #F0F3FF;
+$badge-low-bg: #DCFCE7;
+$badge-low-text: #16A34A;
+$badge-medium-bg: #FEF3C7;
+$badge-medium-text: #D97706;
+$badge-high-bg: #FEE2E2;
+$badge-high-text: #EF4444;

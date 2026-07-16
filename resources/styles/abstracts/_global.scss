@@ -1,0 +1,116 @@
+/*
+|--------------------------------------------------------------------------
+| Global Styles Module
+|--------------------------------------------------------------------------
+|
+| Defines global-level styles that apply across the entire application,
+| including body typography, link behaviors, selection states, and other
+| element-level overrides that follow the reset layer.
+|
+*/
+
+@use "./variables" as *;
+
+.display-l {
+  font-family: $font-family;
+  font-weight: 700;
+  font-size: 48px;
+  letter-spacing: -0.003em;
+  line-height: 125%;
+}
+
+.heading-01 {
+  font-family: $font-family;
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.002em;
+  line-height: 130%;
+}
+
+.heading-02 {
+  font-family: $font-family;
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.002em;
+  line-height: 135%;
+}
+
+.heading-03 {
+  font-family: $font-family;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: -0.001em;
+  line-height: 140%;
+}
+
+.heading-04 {
+  font-family: $font-family;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0;
+  line-height: 145%;
+}
+
+.body-l {
+  font-family: $font-family;
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: 0;
+  line-height: 170%;
+}
+
+.body-m {
+  font-family: $font-family;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: 175%;
+}
+
+.body-s {
+  font-family: $font-family;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0;
+  line-height: 160%;
+}
+
+.caption-l {
+  font-family: $font-family;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: -0.001em;
+  line-height: 150%;
+}
+
+.caption-s {
+  font-family: $font-family;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: -0.001em;
+  line-height: 140%;
+}
+
+.helper-text {
+  font-family: $font-family;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 140%;
+}
+
+.label-m {
+  font-family: $font-family;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.002em;
+  line-height: 140%;
+}
+
+.label-s {
+  font-family: $font-family;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: -0.003em;
+  line-height: 130%;
+}
