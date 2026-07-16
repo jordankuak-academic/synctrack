@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Utilities\ResponseFormatters\Php\ApiResponse;
+use App\Utilities\Security\SystemSecurity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthenticationController extends Controller {
-    use ApiResponse;
+    use ApiResponse, SystemSecurity;
     
     /**
      * [POST|API] Authenticate The User Login Credential.
@@ -19,6 +21,26 @@ class AuthenticationController extends Controller {
      * @return RedirectResponse Redirect to the authenticated main page if success.
      */
     public function login(Request $request) {
+        $email = $request->input("email");
+        $ip_key = "user_ip|{$request->ip()}";
+        $user_key = "login_user|{$email}|{$request->ip()}";
+        
+        // Step 01 - Check If Ip Is On Blacklisted.
+        if ($this->isBlacklisted($request->ip())) {
+            return back()
+                ->with("response", $this->errorResponse("Your IP Is Blacklisted."))
+                ->withInput($email);
+        }
+        
+        // Step 02 - Check If The User Is Attempts Error 5 Times, Throttle It.
+        if (RateLimiter::tooManyAttempts($user_key, 5)) {
+            $seconds = RateLimiter::availableIn($user_key);
+            return back()
+                ->with("response", $this->errorResponse("Too Many Login Attempts. Please Try Again In {$seconds} Seconds."))
+                ->withInput($email);
+        }
+        
+        // Step 03 - Validate The Request Data.
         $validated = $request->validate([
             "email" => "required|string|email",
             "password" => "required|string|min:8",
@@ -30,11 +52,25 @@ class AuthenticationController extends Controller {
             "password" => $validated["password"]
         ];
         
+        // Step 04 - Authenticate The User Login.
         if (Auth::attempt($credentials, $validated["is_remember"])) {
+            RateLimiter::clear($user_key);
+            RateLimiter::clear($ip_key);
             $request->session()->regenerate();
             return redirect()
                 ->intended(route("dashboard"))
                 ->with("response", $this->successResponse("Login Successfully. Welcome Back!"));
+        }
+        
+        RateLimiter::hit($user_key, 60);
+        RateLimiter::hit($ip_key, 60);
+        
+        // Step 05 - Check If The Ip Is Attempts Error 30 Times, Apply Blacklist.
+        if (RateLimiter::tooManyAttempts($ip_key, 30)) {
+            $this->applyBlacklist();
+            return back()
+                ->with("response", $this->errorResponse("Your IP Is Blacklisted."))
+                ->withInput($email);
         }
         
         return back()
