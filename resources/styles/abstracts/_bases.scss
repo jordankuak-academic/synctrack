@@ -8,9 +8,11 @@
 | regardless of user agent stylesheet variations.
 |
 */
+@use "./variables" as *; 
 
 * {
   box-sizing: border-box;
+  font-family: $font-family; 
   margin: 0;
   padding: 0;
 }

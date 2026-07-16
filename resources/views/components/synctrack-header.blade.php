@@ -1,6 +1,6 @@
 <div class="header-wrapper">
   <div class="logo-wrapper">
-    <a href="{{ url("/project") }}" class="logo">SyncTrack</a>
+    <a href="{{ url("/project") }}" class="logo display-l">SyncTrack</a>
   </div>
   
   @php
