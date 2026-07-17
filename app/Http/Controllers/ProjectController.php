@@ -51,7 +51,16 @@ class ProjectController extends Controller {
                 $project->members = $members;
                 return $project;
             })
-            ->toArray();
+            ->pipe(function($projects) {
+                [$completed_projects, $on_progress_projects] = $projects
+                    ->partition(fn($project) => $project->tasks->isNotEmpty() && $project->tasks->every(fn($task) => $task->status === "completed" && $task->subTasks->every(fn($sub_task) => $sub_task->status === "completed")))
+                    ->all();
+                
+                return [
+                    "completed" => $completed_projects->values()->toArray(),
+                    "on_progress" => $on_progress_projects->values()->toArray(),
+                ];
+            });
             
         return view("pages.project", compact("projects"));
     }
