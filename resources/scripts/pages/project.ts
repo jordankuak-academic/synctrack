@@ -41,7 +41,9 @@ interface ProjectItem {
 
 interface MemberItem {
     id: number;
+    membershipId: number | null;
     name: string;
+    role: string;
     email: string;
 }
 
@@ -66,16 +68,26 @@ export default class Project extends Controller {
 
     private projectDetailEditing = false;
 
+    private toastTimer: number | null = null;
+
     protected initialize(): void {
         queueMicrotask(() => {
-            this.loadProjects();
+            this.mountToasts();
 
             this.registerEvents();
 
-            this.renderProjects();
+            this.loadProjects();
+
+            this.restoreProjectGroups();
 
             this.restoreSelectedProject();
         });
+    }
+
+    private mountToasts(): void {
+        this.querySelectorAll<HTMLElement>(".project-toast").forEach(
+            (toast) => document.body.appendChild(toast),
+        );
     }
 
     private restoreSelectedProject(): void {
@@ -99,99 +111,79 @@ export default class Project extends Controller {
     }
 
     private loadProjects(): void {
-        const rawProjects = this.rootElement.dataset.projects;
-
-        if (!rawProjects) {
-            return;
-        }
-
-        const projects = JSON.parse(rawProjects) as Array<{
-            id: number;
-            title: string;
-            description: string | null;
-            tasks?: Array<Record<string, unknown>>;
-            members?: Array<{
-                id: number;
-                username: string;
-                email: string;
-            }>;
-        }>;
-
-        this.projects = projects.map((project) => {
-            const members = (project.members ?? []).map((member) => ({
-                id: member.id,
-                name: member.username,
-                email: member.email,
+        this.projects = Array.from(
+            this.rootElement.querySelectorAll<HTMLElement>(
+                ".project-task-panel[data-project-id]",
+            ),
+        ).map((panel) => {
+            const projectId = Number(panel.dataset.projectId);
+            const detailPanel = this.rootElement.querySelector<HTMLElement>(
+                `.project-detail-panel[data-project-id="${projectId}"]`,
+            );
+            const members = Array.from(
+                detailPanel?.querySelectorAll<HTMLElement>(
+                    ".detail-member-row[data-member-id]",
+                ) ?? [],
+            ).map((member) => ({
+                id: Number(member.dataset.memberId),
+                membershipId: member.dataset.membershipId
+                    ? Number(member.dataset.membershipId)
+                    : null,
+                name: member.dataset.memberName ?? "",
+                role: member.dataset.memberRole ?? "Member",
+                email: member.dataset.memberEmail ?? "",
             }));
+            const taskList = panel.querySelector<HTMLElement>("[data-task-list]");
+            const taskRows = Array.from(
+                taskList?.querySelectorAll<HTMLElement>(
+                    ".task-row:not(.subtask-row)[data-task-id]",
+                ) ?? [],
+            );
 
             return {
-                id: project.id,
-                name: project.title,
-                description: project.description ?? "",
+                id: projectId,
+                name: panel.dataset.projectTitle ?? "",
+                description: panel.dataset.projectDescription ?? "",
                 members,
-                tasks: (project.tasks ?? []).map((task) =>
-                    this.mapStoredTask(task, undefined, members),
-                ),
+                tasks: taskRows.map((row) => {
+                    const taskId = Number(row.dataset.taskId);
+                    const subtasks = Array.from(
+                        taskList?.querySelectorAll<HTMLElement>(
+                            `.subtask-row[data-parent-task-id="${taskId}"]`,
+                        ) ?? [],
+                    ).map((subtask) => this.taskFromElement(subtask, taskId));
+
+                    return {
+                        ...this.taskFromElement(row),
+                        subtasks,
+                    };
+                }),
             };
         });
     }
 
-    private mapStoredTask(
-        task: Record<string, unknown>,
-        parentTaskId?: number,
-        members: MemberItem[] = [],
-    ): Task {
-        const id = Number(task.id);
-        const storedSubtasks = (task.sub_tasks ?? task.subTasks ?? []) as Array<
-            Record<string, unknown>
-        >;
-        const assigneeId =
-            task.assignee_id == null ? "" : String(task.assignee_id);
-        const assignee = members.find(
-            (member) => member.id === Number(assigneeId),
-        );
-
+    private taskFromElement(row: HTMLElement, parentTaskId?: number): Task {
         return {
-            id,
-            name: String(task.title ?? ""),
-            assigned: assignee?.name ?? "",
-            assigneeId,
-            dueDate: task.due_date ? String(task.due_date).slice(0, 10) : "",
-            priority: this.fromStoredPriority(task.priority),
-            status: this.fromStoredStatus(task.status),
-            subtasks: storedSubtasks.map((subtask) =>
-                this.mapStoredTask(subtask, id, members),
-            ),
+            id: Number(row.dataset.taskId),
+            name: row.dataset.taskTitle ?? "",
+            assigned: row.dataset.assigneeName ?? "",
+            assigneeId: row.dataset.assigneeId ?? "",
+            dueDate: row.dataset.dueDate ?? "",
+            priority: (row.dataset.priority ?? "") as TaskPriority,
+            status: (row.dataset.status ?? "assigned") as TaskStatus,
+            subtasks: [],
             expanded: false,
             parentTaskId,
         };
-    }
-
-    private fromStoredPriority(priority: unknown): TaskPriority {
-        const priorities: Record<string, TaskPriority> = {
-            low: "Low",
-            medium: "Medium",
-            high: "High",
-        };
-
-        return priorities[String(priority ?? "")] ?? "";
-    }
-
-    private fromStoredStatus(status: unknown): TaskStatus {
-        const statuses: Record<string, TaskStatus> = {
-            draft: "assigned",
-            in_progress: "in-progress",
-            completed: "done",
-        };
-
-        return statuses[String(status ?? "")] ?? "assigned";
     }
 
     private async submitRequest(
         action: string,
         method: "POST" | "PUT" | "DELETE",
         fields: Record<string, string>,
-    ): Promise<void> {
+        selectCreatedProject = false,
+        showProjectToast = false,
+    ): Promise<boolean> {
         const token =
             document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
                 ?.content ?? "";
@@ -221,8 +213,11 @@ export default class Project extends Controller {
             });
 
             if (!response.ok) {
-                this.showToast(false);
-                return;
+                if (showProjectToast) {
+                    this.showToast(false);
+                }
+
+                return false;
             }
 
             const html = await response.text();
@@ -230,22 +225,64 @@ export default class Project extends Controller {
                 html,
                 "text/html",
             );
-            const projectWrapper =
-                documentResult.querySelector<HTMLElement>("#project-wrapper");
-            const projects = projectWrapper?.dataset.projects;
+            if (this.refreshProjectMarkup(documentResult)) {
 
-            if (projects) {
-                this.rootElement.dataset.projects = projects;
-                this.loadProjects();
-                this.renderProjects();
-                this.restoreSelectedProject();
+                if (selectCreatedProject && this.projects.length > 0) {
+                    this.selectProject(this.projects.length - 1);
+                } else {
+                    this.restoreSelectedProject();
+                }
             }
 
-            this.showToast(true);
+            if (showProjectToast) {
+                this.showToast(true);
+            }
+
+            return true;
         } catch (error) {
             console.error(error);
-            this.showToast(false);
+
+            if (showProjectToast) {
+                this.showToast(false);
+            }
+
+            return false;
         }
+    }
+
+    private refreshProjectMarkup(documentResult: Document): boolean {
+        const selectors = [
+            "#project-empty-list",
+            "#project-task-panels",
+            "#project-detail-panels",
+        ];
+
+        for (const selector of selectors) {
+            const current = this.rootElement.querySelector<HTMLElement>(selector);
+            const replacement =
+                documentResult.querySelector<HTMLElement>(selector);
+
+            if (!current || !replacement) {
+                console.error(`Unable to refresh Project markup: ${selector} is missing.`);
+                return false;
+            }
+
+            current.replaceWith(replacement);
+        }
+
+        const currentCount =
+            this.rootElement.querySelector<HTMLElement>(".project-count");
+        const replacementCount =
+            documentResult.querySelector<HTMLElement>(".project-count");
+
+        if (currentCount && replacementCount) {
+            currentCount.textContent = replacementCount.textContent;
+        }
+
+        this.loadProjects();
+        this.restoreProjectGroups();
+
+        return true;
     }
 
     private taskFields(task: Task): Record<string, string> {
@@ -289,11 +326,9 @@ export default class Project extends Controller {
                 body,
             });
 
-            this.showToast(response.ok);
             return response.ok;
         } catch (error) {
             console.error(error);
-            this.showToast(false);
             return false;
         }
     }
@@ -385,6 +420,34 @@ export default class Project extends Controller {
                 this.selectProject(
                     Number((project as HTMLElement).dataset.index),
                 );
+
+                return;
+            }
+
+            const projectGroupButton = target.closest<HTMLButtonElement>(
+                ".project-status-heading",
+            );
+
+            if (projectGroupButton) {
+                this.toggleProjectGroup(projectGroupButton);
+
+                return;
+            }
+
+            const detailMemberDelete = target.closest<HTMLButtonElement>(
+                ".detail-member-delete",
+            );
+
+            if (detailMemberDelete) {
+                this.openProjectDetailMemberDeleteModal(
+                    Number(detailMemberDelete.dataset.membershipId),
+                );
+
+                return;
+            }
+
+            if (target.closest(".detail-add-member")) {
+                this.openInviteMemberModal(undefined, true);
 
                 return;
             }
@@ -528,9 +591,11 @@ export default class Project extends Controller {
         );
     }
 
-    private createProject(): void {
+    private async createProject(): Promise<void> {
         if (!this.validateProject()) {
             this.showToast(false);
+
+            this.leaveCreateProject();
 
             return;
         }
@@ -540,13 +605,44 @@ export default class Project extends Controller {
             "#project-description",
         )!;
 
-        void this.submitRequest("/project", "POST", {
-            title: name.value.trim(),
-            description: description.value.trim(),
-        });
+        const createButton = this.querySelector<HTMLButtonElement>(
+            "#save-project-btn",
+        );
 
+        if (createButton) {
+            createButton.disabled = true;
+        }
+
+        const created = await this.submitRequest(
+            "/project",
+            "POST",
+            {
+                title: name.value.trim(),
+                description: description.value.trim(),
+            },
+            true,
+            true,
+        );
+
+        if (createButton) {
+            createButton.disabled = false;
+        }
+
+        if (created) {
+            this.clearProjectForm();
+        } else {
+            this.leaveCreateProject();
+        }
+    }
+
+    private leaveCreateProject(): void {
         this.clearProjectForm();
-        this.showState(this.STATE_EMPTY);
+
+        this.showState(
+            this.currentProject >= 0
+                ? this.STATE_PROJECT
+                : this.STATE_EMPTY,
+        );
     }
 
     private renderProjects(): void {
@@ -554,27 +650,52 @@ export default class Project extends Controller {
 
         const empty = this.querySelector<HTMLElement>("#project-empty-list");
 
+        const onProgressList = this.querySelector<HTMLElement>(
+            "#on-progress-projects",
+        );
+
+        const completedList = this.querySelector<HTMLElement>(
+            "#completed-projects",
+        );
+
+        const onProgressCount = this.querySelector<HTMLElement>(
+            "#on-progress-count",
+        );
+
+        const completedCount =
+            this.querySelector<HTMLElement>("#completed-count");
+
         const count = this.querySelector<HTMLElement>(".project-count");
 
-        if (!list || !empty || !count) {
+        if (
+            !list ||
+            !empty ||
+            !onProgressList ||
+            !completedList ||
+            !onProgressCount ||
+            !completedCount ||
+            !count
+        ) {
             return;
         }
 
         list.innerHTML = "";
 
+        onProgressList.innerHTML = "";
+
+        completedList.innerHTML = "";
+
         count.textContent = this.projects.length.toString();
 
-        if (this.projects.length === 0) {
-            empty.classList.add("active");
+        empty.classList.add("active");
 
-            list.classList.remove("active");
+        empty.classList.toggle("has-projects", this.projects.length > 0);
 
-            return;
-        }
+        list.classList.remove("active");
 
-        empty.classList.remove("active");
+        let activeProjects = 0;
 
-        list.classList.add("active");
+        let completedProjects = 0;
 
         this.projects.forEach((project, index) => {
             const button = document.createElement("button");
@@ -585,13 +706,78 @@ export default class Project extends Controller {
 
             button.dataset.index = index.toString();
 
+            button.dataset.projectId = project.id.toString();
+
             if (index === this.currentProject) {
                 button.classList.add("active");
             }
 
             button.innerHTML = `<span class="project-name body-s">${project.name}</span>`;
 
-            list.appendChild(button);
+            const completed =
+                project.tasks.length > 0 &&
+                project.tasks.every((task) => task.status === "done");
+
+            if (completed) {
+                completedList.appendChild(button);
+                completedProjects += 1;
+            } else {
+                onProgressList.appendChild(button);
+                activeProjects += 1;
+            }
+        });
+
+        onProgressCount.textContent = activeProjects.toString();
+
+        completedCount.textContent = completedProjects.toString();
+
+        this.restoreProjectGroups();
+    }
+
+    private toggleProjectGroup(button: HTMLButtonElement): void {
+        const group = button.closest<HTMLElement>(".project-status-group");
+
+        if (!group) {
+            return;
+        }
+
+        const expanded = group.classList.toggle("expanded");
+
+        button.setAttribute("aria-expanded", expanded.toString());
+
+        const groupName = button.dataset.projectGroup;
+
+        if (groupName) {
+            localStorage.setItem(
+                `synctrack.projectGroup.${groupName}`,
+                expanded.toString(),
+            );
+        }
+    }
+
+    private restoreProjectGroups(): void {
+        this.querySelectorAll<HTMLButtonElement>(
+            ".project-status-heading[data-project-group]",
+        ).forEach((button) => {
+            const group = button.closest<HTMLElement>(
+                ".project-status-group",
+            );
+            const groupName = button.dataset.projectGroup;
+
+            if (!group || !groupName) {
+                return;
+            }
+
+            const stored = localStorage.getItem(
+                `synctrack.projectGroup.${groupName}`,
+            );
+            const expanded =
+                stored == null
+                    ? groupName === "on-progress"
+                    : stored === "true";
+
+            group.classList.toggle("expanded", expanded);
+            button.setAttribute("aria-expanded", expanded.toString());
         });
     }
 
@@ -604,11 +790,77 @@ export default class Project extends Controller {
 
         this.members = this.projects[index]?.members ?? [];
 
-        this.renderProjects();
-
-        this.renderTasks();
+        this.showProjectPanels(this.projects[index].id);
 
         this.showState(this.STATE_PROJECT);
+    }
+
+    private showProjectPanels(projectId: number): void {
+        this.querySelectorAll<HTMLElement>(".project-item").forEach((button) => {
+            button.classList.toggle(
+                "active",
+                Number(button.dataset.projectId) === projectId,
+            );
+        });
+
+        this.querySelectorAll<HTMLElement>(".project-task-panel").forEach(
+            (panel) => {
+                const active = Number(panel.dataset.projectId) === projectId;
+                panel.hidden = !active;
+                const taskList = panel.querySelector<HTMLElement>("[data-task-list]");
+
+                if (taskList) {
+                    taskList.id = active ? "task-list" : "";
+                }
+            },
+        );
+
+        this.querySelectorAll<HTMLElement>(".project-detail-panel").forEach(
+            (panel) => {
+                const active = Number(panel.dataset.projectId) === projectId;
+                panel.hidden = !active;
+                const name = panel.querySelector<HTMLInputElement>(
+                    "[data-detail-project-name]",
+                );
+                const description = panel.querySelector<HTMLTextAreaElement>(
+                    "[data-detail-project-description]",
+                );
+                const members = panel.querySelector<HTMLElement>(
+                    "[data-detail-member-list]",
+                );
+                const addMember = panel.querySelector<HTMLButtonElement>(
+                    ".detail-add-member",
+                );
+
+                if (name) {
+                    name.id = active
+                        ? "detail-project-name"
+                        : `detail-project-name-${panel.dataset.projectId}`;
+                    name.closest(".detail-field")?.querySelector("label")?.setAttribute(
+                        "for",
+                        name.id,
+                    );
+                }
+
+                if (description) {
+                    description.id = active
+                        ? "detail-project-description"
+                        : `detail-project-description-${panel.dataset.projectId}`;
+                    description
+                        .closest(".detail-field")
+                        ?.querySelector("label")
+                        ?.setAttribute("for", description.id);
+                }
+
+                if (members) {
+                    members.id = active ? "detail-member-list" : "";
+                }
+
+                if (addMember) {
+                    addMember.id = active ? "detail-add-member" : "";
+                }
+            },
+        );
     }
 
     private openProjectDetail(): void {
@@ -617,8 +869,6 @@ export default class Project extends Controller {
         }
 
         this.projectDetailEditing = false;
-
-        this.populateProjectDetail();
 
         this.setProjectDetailEditing(false);
 
@@ -651,12 +901,75 @@ export default class Project extends Controller {
                   .map(
                       (member, index) => `
                 <div class="detail-member-row body-s">
-                    <span>${index + 1}</span><span>${member.name}</span><span>${member.email}</span>
+                    <span>${index + 1}</span><span>${member.name}</span><span>${member.role}</span><span>${member.email}</span>
+                    ${
+                        member.membershipId
+                            ? `<button type="button" class="detail-member-delete" data-membership-id="${member.membershipId}" aria-label="Delete ${this.escapeAttribute(member.name)}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2m-8 0 1 14h8l1-14M10 10v6m4-6v6" /></svg>
+                            </button>`
+                            : ""
+                    }
                 </div>
             `,
                   )
                   .join("")
             : `<div class="detail-member-empty helper-text">No members have been added.</div>`;
+    }
+
+    private openProjectDetailMemberDeleteModal(
+        membershipId: number,
+    ): void {
+        if (!membershipId || !this.projectDetailEditing) {
+            return;
+        }
+
+        const modal = document.createElement("div");
+
+        modal.className = "member-modal-backdrop";
+        modal.innerHTML = `
+            <div class="member-delete-modal" role="dialog" aria-modal="true" aria-labelledby="project-member-delete-title">
+                <div class="member-modal-header">
+                    <span id="project-member-delete-title">Delete Member</span>
+                    <button type="button" data-close aria-label="Close">&times;</button>
+                </div>
+                <div class="member-delete-content">
+                    <p>Are you sure you want to delete this member in this project? The assigned task for this member will be change to unassigned.</p>
+                </div>
+                <div class="member-modal-footer">
+                    <button type="button" data-close>No</button>
+                    <button type="button" class="member-delete-confirm">Yes</button>
+                </div>
+            </div>
+        `;
+
+        modal.addEventListener("click", async (event) => {
+            const target = event.target as HTMLElement;
+
+            if (target === modal || target.closest("[data-close]")) {
+                modal.remove();
+                return;
+            }
+
+            if (!target.closest(".member-delete-confirm")) {
+                return;
+            }
+
+            modal.remove();
+
+            const deleted = await this.submitRequest(
+                `/member/${membershipId}`,
+                "DELETE",
+                {},
+            );
+
+            if (deleted) {
+                this.openProjectDetail();
+                this.setProjectDetailEditing(true);
+                this.showNamedToast("#toast-member-delete");
+            }
+        });
+
+        document.body.appendChild(modal);
     }
 
     private setProjectDetailEditing(editing: boolean): void {
@@ -695,7 +1008,7 @@ export default class Project extends Controller {
         this.showState(this.STATE_PROJECT_DETAIL);
     }
 
-    private saveProjectDetail(): void {
+    private async saveProjectDetail(): Promise<void> {
         const project = this.projects[this.currentProject];
 
         const name = this.querySelector<HTMLInputElement>(
@@ -713,19 +1026,28 @@ export default class Project extends Controller {
             !name.value.trim() ||
             !description.value.trim()
         ) {
-            this.showToast(false);
+            this.populateProjectDetail();
+            this.setProjectDetailEditing(false);
+            this.showState(this.STATE_PROJECT_DETAIL);
+            this.showNamedToast("#toast-project-update-error");
 
             return;
         }
 
-        project.name = name.value.trim();
+        const previousName = project.name;
+        const previousDescription = project.description;
+        const nextName = name.value.trim();
+        const nextDescription = description.value.trim();
 
-        project.description = description.value.trim();
-
-        void this.sendRequest(`/project/${project.id}`, "PUT", {
-            title: project.name,
-            description: project.description,
+        const updated = await this.sendRequest(`/project/${project.id}`, "PUT", {
+            title: nextName,
+            description: nextDescription,
         });
+
+        project.name = updated ? nextName : previousName;
+        project.description = updated
+            ? nextDescription
+            : previousDescription;
 
         this.renderProjects();
 
@@ -737,10 +1059,15 @@ export default class Project extends Controller {
 
         this.showState(this.STATE_PROJECT_DETAIL);
 
-        this.showToast(true);
+        this.showNamedToast(
+            updated
+                ? "#toast-project-update-success"
+                : "#toast-project-update-error",
+        );
+
     }
 
-    private deleteCurrentProject(): void {
+    private async deleteCurrentProject(): Promise<void> {
         if (this.currentProject === -1) {
             return;
         }
@@ -751,7 +1078,15 @@ export default class Project extends Controller {
 
         this.currentProject = -1;
 
-        this.submitRequest(`/project/${project.id}`, "DELETE", {});
+        const deleted = await this.submitRequest(
+            `/project/${project.id}`,
+            "DELETE",
+            {},
+        );
+
+        if (deleted) {
+            this.showNamedToast("#toast-project-delete");
+        }
     }
 
     private openDeleteProjectModal(): void {
@@ -829,7 +1164,7 @@ export default class Project extends Controller {
 
         const project = this.projects[this.currentProject];
 
-        title.textContent = project.name;
+        title.textContent = "Tasks";
 
         taskList.innerHTML = "";
 
@@ -877,7 +1212,11 @@ export default class Project extends Controller {
 
                 <div class="priority-column">
 
-                    ${this.renderPrioritySelect(task)}
+                    ${
+                        task.subtasks.length > 0
+                            ? '<span class="main-task-summary">...</span>'
+                            : this.renderPrioritySelect(task)
+                    }
 
                 </div>
 
@@ -1004,11 +1343,11 @@ export default class Project extends Controller {
 
     private getStatusLabel(status: TaskStatus): string {
         return {
-            assigned: "Assigned",
+            assigned: "Draft",
 
             "in-progress": "In Progress",
 
-            done: "Done",
+            done: "Completed",
         }[status];
     }
 
@@ -1068,26 +1407,49 @@ export default class Project extends Controller {
 
             "in-progress": "done",
 
-            done: "assigned",
+            done: "done",
         };
 
         task.status = nextStatus[task.status];
 
+        const currentProject = this.projects[this.currentProject];
+
+        if (
+            currentProject?.tasks.length > 0 &&
+            currentProject.tasks.every((projectTask) =>
+                projectTask.status === "done"
+            )
+        ) {
+            localStorage.setItem(
+                "synctrack.projectGroup.completed",
+                "true",
+            );
+        }
+
         this.renderTasks();
+
+        this.renderProjects();
 
         this.persistTask(task);
     }
 
-    private deleteTask(taskId: number, isSubtask: boolean): void {
+    private async deleteTask(
+        taskId: number,
+        isSubtask: boolean,
+    ): Promise<void> {
         if (this.currentProject === -1) {
             return;
         }
 
-        this.submitRequest(
+        const deleted = await this.submitRequest(
             isSubtask ? `/subtask/${taskId}` : `/task/${taskId}`,
             "DELETE",
             {},
         );
+
+        if (deleted && !isSubtask) {
+            this.showNamedToast("#toast-task-delete");
+        }
     }
 
     private updateTaskPriority(
@@ -1218,23 +1580,19 @@ export default class Project extends Controller {
             <div class="member-modal" role="dialog" aria-modal="true" aria-label="${isUpdate ? "Update Project Member" : "Assign Member"}">
                 <div class="member-modal-header"><span>${isUpdate ? "Update Project Member" : "Assign Member"}</span><button type="button" data-close>&times;</button></div>
                 ${isUpdate ? `<div class="member-current"><span>Current Member</span><strong>${currentMember}</strong></div>` : ""}
-                <div class="member-modal-table member-modal-head"><span>No</span><span>Member Name</span><span>Email</span><span>Action</span></div>
-                <button type="button" class="member-option" data-member="" data-member-id="0">
-                    <span>0</span><span>No member</span><span>-</span><span></span>
+                <div class="member-modal-table member-modal-head"><span>No</span><span>Member Name</span><span>Role</span><span>Email</span></div>
+                <button type="button" class="member-option default-option" data-member="" data-member-id="0">
+                    <span>Default</span><span>No Assignee</span><span>-</span><span>-</span>
                 </button>
                 ${this.members
                     .map(
                         (member, index) => `
-                        <div class="member-row">
-                            <button type="button" class="member-option" data-member="${member.name}" data-member-id="${member.id}">
-                                <span>${index + 1}</span><span>${member.name}</span><span>${member.email}</span><span></span>
-                            </button>
-                            <button type="button" class="member-delete" data-member="${member.name}" aria-label="Remove ${member.name}">&#128465;</button>
-                        </div>
+                        <button type="button" class="member-option" data-member="${member.name}" data-member-id="${member.id}">
+                            <span>${index + 1}</span><span>${member.name}</span><span>${member.role}</span><span>${member.email}</span>
+                        </button>
                     `,
                     )
                     .join("")}
-                <button type="button" class="member-modal-invite">+ <span>Invite Other Member</span></button>
                 <p class="member-selection-error" role="alert">Please select a new member.</p>
                 <div class="member-modal-footer"><button type="button" data-close>Cancel</button><button type="button" class="member-confirm">Confirm</button></div>
             </div>
@@ -1246,20 +1604,6 @@ export default class Project extends Controller {
 
         modal.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;
-
-            const memberDelete =
-                target.closest<HTMLButtonElement>(".member-delete");
-
-            if (memberDelete) {
-                modal.remove();
-
-                this.openMemberDeleteConfirmation(
-                    memberPicker,
-                    memberDelete.dataset.member ?? "",
-                );
-
-                return;
-            }
 
             const option = target.closest<HTMLButtonElement>(".member-option");
 
@@ -1283,12 +1627,6 @@ export default class Project extends Controller {
 
                     modal.remove();
                 }
-
-                return;
-            }
-
-            if (target.closest(".member-modal-invite")) {
-                this.openInviteMemberModal(modal);
 
                 return;
             }
@@ -1430,23 +1768,26 @@ export default class Project extends Controller {
         this.renderTasks();
     }
 
-    private openInviteMemberModal(assignModal: HTMLElement): void {
+    private openInviteMemberModal(
+        assignModal?: HTMLElement,
+        returnToProjectDetail = false,
+    ): void {
         const modal = document.createElement("div");
 
         modal.className = "member-modal-backdrop";
 
         modal.innerHTML = `
-            <div class="invite-member-modal" role="dialog" aria-modal="true" aria-label="Invite Member">
-                <div class="member-modal-header"><span>Invite Member</span><button type="button" data-close>&times;</button></div>
+            <div class="invite-member-modal" role="dialog" aria-modal="true" aria-label="Add Other Member">
+                <div class="member-modal-header"><span>Add Other Member</span><button type="button" data-close>&times;</button></div>
                 <div class="invite-member-content">
-                    <p>Please enter the email of member you want to invite</p>
+                    <p>Please enter the email of member you want to add.</p>
                     <input type="email" id="invite-member-email" placeholder="you@example.com">
                 </div>
                 <div class="member-modal-footer"><button type="button" data-close>Cancel</button><button type="button" class="invite-confirm">Confirm</button></div>
             </div>
         `;
 
-        modal.addEventListener("click", (event) => {
+        modal.addEventListener("click", async (event) => {
             const target = event.target as HTMLElement;
 
             if (target.closest("[data-close]")) {
@@ -1466,13 +1807,21 @@ export default class Project extends Controller {
 
                 modal.remove();
 
-                assignModal.remove();
+                assignModal?.remove();
 
-                this.submitRequest("/member", "POST", {
+                const added = await this.submitRequest("/member", "POST", {
                     email,
                     project_id:
                         this.projects[this.currentProject].id.toString(),
                 });
+
+                if (added && returnToProjectDetail) {
+                    this.openProjectDetail();
+                    this.setProjectDetailEditing(true);
+                    this.showNamedToast("#toast-member-add-success");
+                } else if (returnToProjectDetail) {
+                    this.showNamedToast("#toast-member-add-error");
+                }
             }
         });
 
@@ -1629,8 +1978,6 @@ export default class Project extends Controller {
         }
 
         if (!this.hasDraftTaskValue()) {
-            this.showToast(false);
-
             return;
         }
 
@@ -1640,8 +1987,6 @@ export default class Project extends Controller {
                 : this.findTask(this.editingParentTaskId);
 
         if (!name.value.trim()) {
-            this.showToast(false);
-
             return;
         }
 
@@ -1764,9 +2109,19 @@ export default class Project extends Controller {
     ====================================================== */
 
     private showToast(success: boolean): void {
-        const toast = document.querySelector<HTMLElement>(
-            success ? "#toast-success" : "#toast-error",
-        );
+        this.showNamedToast(success ? "#toast-success" : "#toast-error");
+    }
+
+    private showNamedToast(selector: string): void {
+        if (this.toastTimer !== null) {
+            window.clearTimeout(this.toastTimer);
+        }
+
+        document
+            .querySelectorAll<HTMLElement>(".project-toast.show")
+            .forEach((visibleToast) => visibleToast.classList.remove("show"));
+
+        const toast = document.querySelector<HTMLElement>(selector);
 
         if (!toast) {
             return;
@@ -1774,8 +2129,10 @@ export default class Project extends Controller {
 
         toast.classList.add("show");
 
-        window.setTimeout(() => {
+        this.toastTimer = window.setTimeout(() => {
             toast.classList.remove("show");
+
+            this.toastTimer = null;
         }, 3000);
     }
 }
