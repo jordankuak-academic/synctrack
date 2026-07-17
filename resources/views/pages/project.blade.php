@@ -7,10 +7,8 @@
     $allProjects = $completedProjects->concat($onProgressProjects)->values();
     $projectCount = $completedProjects->count() + $onProgressProjects->count();
 @endphp
-{{-- Project page --}}
 <div id="project-wrapper">
-    {{-- Project header --}}
-    <div class="project-header">
+<div class="project-header">
         <h1 class="heading-01">
             Project List
         </h1>
@@ -50,9 +48,7 @@
             <button id="save-project-edit-btn" class="btn btn-primary">Save</button>
         </div>
     </div>
-
-    {{-- Project list and content --}}
-    <div class="project-body">
+<div class="project-body">
         <aside class="project-list-card">
             <div class="card-header">
                 <h2 class="heading-04">
