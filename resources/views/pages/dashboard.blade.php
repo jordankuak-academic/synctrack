@@ -42,30 +42,17 @@
               @foreach ($columnItems as $item)
                 @php
                   $priority = $item["priority"] ?? "medium";
-                  $updateUrl = $item["type"] === "subtask"
-                    ? route("subtask.update", ["id" => $item["id"]])
-                    : route("task.update", ["id" => $item["id"]]);
+                  $updateUrl = $item["type"] === "subtask" ? route("subtask.update", ["id" => $item["id"]]) : route("task.update", ["id" => $item["id"]]);
                 @endphp
                 
-                <article
-                  class="task-card"
-                  draggable="true"
-                  data-item-id="{{ $item["id"] }}"
-                  data-item-type="{{ $item["type"] }}"
-                  data-current-status="{{ $column }}"
-                  data-original-status="{{ $column }}"
-                  data-task-status="{{ $item["status"] }}"
-                  data-title="{{ $item["title"] }}"
-                  data-assignee-id="{{ $item["assignee_id"] }}"
-                  data-due-date="{{ $item["due_date"]?->toDateString() }}"
-                  data-priority="{{ $priority }}"
-                  data-update-url="{{ $updateUrl }}"
-                >
+                <article class="task-card" draggable="true" data-item-id="{{ $item["id"] }}" data-item-type="{{ $item["type"] }}" data-current-status="{{ $column }}" data-original-status="{{ $column }}" data-task-status="{{ $item["status"] }}" data-title="{{ $item["title"] }}" data-assignee-id="{{ $item["assignee_id"] }}" data-due-date="{{ $item["due_date"]?->toDateString() }}" data-priority="{{ $priority }}" data-update-url="{{ $updateUrl }}">
                   <span class="task-status-indicator task-status-indicator--{{ $column }}"></span>
+                  
                   <div class="task-card-content">
                     <div class="task-card-meta">
                     <p class="body-s">{{ $item["title"] }}</p>
                   </div>
+                  
                   <span class="priority-badge priority-badge--{{ $priority }}">{{ ucfirst($priority) }}</span>
                 </article>
               @endforeach
