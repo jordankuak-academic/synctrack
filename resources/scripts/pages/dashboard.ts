@@ -2,14 +2,17 @@ import Controller from "@/utils/controller";
 
 type DashboardColumn = "in_progress" | "completed" | "overdue";
 type EditableDashboardColumn = Exclude<DashboardColumn, "overdue">;
+type DashboardItemType = "task" | "subtask";
 
 type DragState = {
   card: HTMLElement;
-  taskId: number;
+  itemId: number;
+  itemType: DashboardItemType;
   originalStatus: DashboardColumn;
   originalTaskStatus: string;
   originalContainer: HTMLElement;
   originalNextSibling: ChildNode | null;
+  updateUrl: string;
 };
 
 const editableColumns: EditableDashboardColumn[] = ["in_progress", "completed"];
@@ -26,26 +29,36 @@ export default class DashboardController extends Controller {
   private bindTaskCards(): void {
     this.querySelectorAll<HTMLElement>(".task-card").forEach((card) => {
       card.addEventListener("dragstart", (event) => {
-        const taskId = Number(card.dataset.taskId);
+        const itemId = Number(card.dataset.itemId);
+        const itemType = this.getItemType(card);
         const originalStatus = this.getCardStatus(card);
         const originalContainer = card.closest<HTMLElement>(".task-card-container");
+        const updateUrl = card.dataset.updateUrl ?? "";
 
-        if (taskId <= 0 || originalStatus == null || originalContainer == null) {
+        if (
+          itemId <= 0 ||
+          itemType == null ||
+          originalStatus == null ||
+          originalContainer == null ||
+          updateUrl.length === 0
+        ) {
           event.preventDefault();
           return;
         }
 
         this.dragState = {
           card,
-          taskId,
+          itemId,
+          itemType,
           originalStatus,
           originalTaskStatus: card.dataset.taskStatus ?? "",
           originalContainer,
           originalNextSibling: card.nextSibling,
+          updateUrl,
         };
 
         card.classList.add("is-dragging");
-        event.dataTransfer?.setData("text/plain", String(taskId));
+        event.dataTransfer?.setData("text/plain", String(itemId));
 
         if (event.dataTransfer != null) {
           event.dataTransfer.effectAllowed = "move";
@@ -98,12 +111,12 @@ export default class DashboardController extends Controller {
           return;
         }
 
-        await this.moveTaskCard(this.dragState, targetStatus, targetContainer);
+        await this.moveDashboardItem(this.dragState, targetStatus, targetContainer);
       });
     });
   }
 
-  private async moveTaskCard(
+  private async moveDashboardItem(
     dragState: DragState,
     targetStatus: EditableDashboardColumn,
     targetContainer: HTMLElement,
@@ -111,18 +124,19 @@ export default class DashboardController extends Controller {
     this.placeCard(dragState.card, targetContainer, targetStatus);
 
     try {
-      const response = await fetch(this.getStatusUrl(dragState.taskId), {
-        method: "PATCH",
+      const token = this.getCsrfToken();
+      const response = await fetch(dragState.updateUrl, {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
           Accept: "application/json",
-          "X-CSRF-TOKEN": this.getCsrfToken(),
+          "X-CSRF-TOKEN": token,
         },
-        body: JSON.stringify({ column: targetStatus }),
+        body: this.buildUpdatePayload(dragState.card, targetStatus, token),
       });
 
       if (!response.ok) {
-        throw new Error("Unable to update task status.");
+        throw new Error(`Unable to update ${dragState.itemType} status.`);
       }
     } catch (error) {
       this.restoreTaskPosition(dragState);
@@ -142,6 +156,22 @@ export default class DashboardController extends Controller {
     card.dataset.taskStatus = targetStatus;
     this.updateStatusIndicator(card, targetStatus);
     this.refreshAllColumns();
+  }
+
+  private buildUpdatePayload(
+    card: HTMLElement,
+    targetStatus: EditableDashboardColumn,
+    token: string,
+  ): URLSearchParams {
+    return new URLSearchParams({
+      assignee_id: card.dataset.assigneeId ?? "",
+      title: card.dataset.title ?? "",
+      due_date: card.dataset.dueDate ?? "",
+      priority: card.dataset.priority ?? "",
+      status: targetStatus,
+      _token: token,
+      _method: "PUT",
+    });
   }
 
   private restoreTaskPosition(dragState: DragState): void {
@@ -227,6 +257,14 @@ export default class DashboardController extends Controller {
     return this.querySelector<HTMLElement>(`[data-card-container="${status}"]`);
   }
 
+  private getItemType(card: HTMLElement): DashboardItemType | null {
+    if (card.dataset.itemType === "task" || card.dataset.itemType === "subtask") {
+      return card.dataset.itemType;
+    }
+
+    return null;
+  }
+
   private toDashboardColumn(value: string | undefined): DashboardColumn | null {
     if (value === "in_progress" || value === "completed" || value === "overdue") {
       return value;
@@ -243,11 +281,6 @@ export default class DashboardController extends Controller {
 
   private clearDropState(column: HTMLElement): void {
     column.classList.remove("is-drag-over", "is-drop-blocked");
-  }
-
-  private getStatusUrl(taskId: number): string {
-    const template = this.rootElement.dataset.statusUrlTemplate;
-    return template?.replace("__TASK_ID__", String(taskId)) ?? `/task/${taskId}/status`;
   }
 
   private getCsrfToken(): string {
