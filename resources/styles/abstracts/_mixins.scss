@@ -8,3 +8,26 @@
 | and maintainable stylesheets throughout the application.
 |
 */
+
+@use "./variables" as *;
+
+@mixin typography($font_weight, $font_size, $letter_spacing, $line_height) {
+  font-family: $font-family;
+  font-weight: $font_weight;
+  font-size: $font_size;
+  letter-spacing: $letter_spacing;
+  line-height: $line_height;
+}
+
+@mixin heading-01 { @include typography(600, 32px, -0.002em, 130%); }
+@mixin heading-02 { @include typography(600, 28px, -0.002em, 135%); }
+@mixin heading-03 { @include typography(600, 24px, -0.001em, 140%); }
+@mixin heading-04 { @include typography(600, 20px, 0, 145%); }
+@mixin body-l { @include typography(500, 18px, 0, 170%); }
+@mixin body-m { @include typography(400, 16px, 0, 175%); }
+@mixin body-s { @include typography(400, 14px, 0, 160%); }
+@mixin caption-l { @include typography(500, 13px, -0.001em, 150%); }
+@mixin caption-s { @include typography(500, 12px, -0.001em, 140%); }
+@mixin helper-text { @include typography(400, 12px, 0, 140%); }
+@mixin label-m { @include typography(600, 14px, -0.002em, 140%); }
+@mixin label-s { @include typography(500, 12px, -0.003em, 130%); }

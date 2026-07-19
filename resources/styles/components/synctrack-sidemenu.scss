@@ -1,84 +1,90 @@
 @use "../abstracts/variables" as *;
 
-.sidemenu-wrapper {
-  width: 260px;
-  height: 100%;
-  background: #F0F3FF;
-  padding: 16px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 0;
-
-  .sidemenu {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 228px;
-  }
-}
-
-.nav-item {
+.st-sidemenu-wrapper {
   display: flex;
-  align-items: center;
-  gap: 10px;
-
-  width: 228px;
-  height: 40px;
-
-  padding: 0 12px;
-
-  border-radius: 8px;
-
-  text-decoration: none;
-
-  background: transparent;
-
-  transition: background .2s ease;
-
-  .menu-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-
-    color: #656B78;
-    stroke-width: 2;
-  }
-
-  .menu-title {
-    font-family: Inter, sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.6;
-
-    color: #11131A;
-  }
-
-  &:hover {
-    background: #E7EAFF;
-  }
-
-  &.active {
-    background: #DDE1FF;
-
-    .menu-icon {
-      color: #4A6CF7;
-    }
-
-    .menu-title {
-      color: #11131A;
-      font-weight: 400;
-    }
-  }
-}
-
-@media (max-width:768px) {
-
-  .sidemenu-wrapper {
-    padding: 12px;
-  }
-
+  min-height: calc(100vh - 64px);
+  padding: 16px;
+  width: 240px;
+  
   .sidemenu {
-    gap: 12px;
-  }
+    align-items: center;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    
+    .nav-item {
+      align-items: center;
+      border-radius: 8px;
+      color: $neutral-900;
+      display: grid;
+      gap: 8px;
+      grid-template-areas: "icon title";
+      grid-template-columns: 22px 1fr;
+      height: 40px;
+      padding: 0 12px;
+      text-decoration: none;
+      width: 208px;
+      
+      &.active {
+        color: $primary-500;
+        background-color: $background-700;
+      }
+      
+      .menu-icon {
+        height: 22px;
+        width: 22px;
+        grid-area: icon;
+      }
+      
+      .menu-title {
+        grid-area: title;
+      }
+    }
+    
+    .logout-form {
+      margin-top: auto;
+      width: 208px;
+    }
 
+    .logout-menu {
+      align-items: center;
+      background-color: $danger-background;
+      border: 1px solid $danger-700;
+      border-radius: 8px;
+      color: $danger-700;
+      cursor: pointer;
+      display: grid;
+      gap: 8px;
+      grid-template-areas: "icon title";
+      grid-template-columns: 22px 1fr;
+      height: 40px;
+      padding: 0 12px;
+      position: relative;
+      text-align: left;
+      text-decoration: none;
+      width: 100%;
+      
+      &::before {
+        background-color: $neutral-100;
+        content: "";
+        height: 1px;
+        left: 0;
+        position: absolute;
+        top: -17px;
+        width: 100%;
+      }
+      
+      .danger-menu {
+        color: $danger-700;
+        height: 22px;
+        width: 22px;
+        grid-area: icon;
+      }
+      
+      .logout-title {
+        grid-area: title;
+      }
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import Controller from "@/utils/controller";
+import Controller from "@/utils/Controller";
 
 type DashboardColumn = "in_progress" | "completed" | "overdue";
 type EditableDashboardColumn = Exclude<DashboardColumn, "overdue">;

@@ -4,6 +4,7 @@
 
 @section("contents")
   @php
+    dump($tasks);
     $dashboardColumns = [
       "in_progress" => [
         "title" => "In Progress",

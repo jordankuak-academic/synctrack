@@ -9,42 +9,30 @@
 |
 */
 
-@keyframes slide-panel-exit-left {
-  from {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-  
-  to {
-    opacity: 0;
-    transform: translate3d(calc(var(--panel-slide-distance, 24px) * -1), 0, 0);
-  }
-}
-
-@keyframes slide-panel-enter-right {
+@keyframes toast-enter {
   from {
     opacity: 0;
-    transform: translate3d(var(--panel-slide-distance, 24px), 0, 0);
+    transform: translate(-50%, -12px);
   }
   
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: translate(-50%, 0);
   }
 }
 
-@mixin slide-panel-transition($distance: 24px, $duration: 320ms, $timing: cubic-bezier(0.16, 1, 0.3, 1)) {
-  --panel-slide-distance: #{$distance};
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  
-  &.is-leaving-left {
-    animation: slide-panel-exit-left $duration $timing both;
-    pointer-events: none;
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
   
-  &.is-entering-right {
-    animation: slide-panel-enter-right $duration $timing both;
+  to {
+    opacity: 0;
+    transform: translate(-50%, -12px);
   }
+}
+
+@mixin toast-transition($enter_duration: 240ms, $exit_duration: 280ms, $exit_delay: 3.2s, $enter_timing: ease-out, $exit_timing: ease-in) {
+  animation: toast-enter $enter_duration $enter_timing, toast-exit $exit_duration $exit_timing $exit_delay forwards;
 }

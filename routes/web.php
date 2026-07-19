@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthenticationController;
+use App\Http\Controllers\BoardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProjectController;
@@ -36,4 +37,5 @@ Route::middleware("auth")->group(function() {
     Route::delete("/subtask/{id}", [SubTaskController::class, "destroy"])->name("subtask.destroy");
     
     Route::get("/dashboard", [DashboardController::class, "index"])->name("dashboard");
+    Route::get("/board", [BoardController::class, "index"])->name("board");
 });
