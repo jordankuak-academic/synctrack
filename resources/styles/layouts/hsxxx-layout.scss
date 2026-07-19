@@ -1,48 +1,31 @@
-html,
+@use "../abstracts/variables" as *;
+
 body {
-  position: relative;
-  width: 100vw;
-  min-width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  overflow: hidden;
-  background: #F0F3FF;
-}
-
-.hsxxx-header {
-  position: fixed;
-  inset: 0 0 auto 0;
-  width: 100vw;
-  height: 96px;
-  z-index: 1000;
-  background: #F0F3FF;
-}
-
-.hsxxx-sidemenu {
-  position: fixed;
-  top: 96px;
-  left: 0;
-  width: 260px;
-  height: calc(100vh - 96px);
-  background: #F0F3FF;
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-}
-
-.hsxxx-main {
-  position: fixed;
-  top: 96px;
-  left: 260px;
-  right: 0;
-  bottom: 0;
-
-  overflow: hidden;
-  background: #F9F9FF;
-  border: 0;
-  border-radius: 0;
+  &.st-hsxxx-layout {
+    display: grid;
+    grid-template-areas:
+      "header header"
+      "sidemenu main";
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: 64px minmax(0, 1fr);
+    min-height: 100vh;
+    
+    header {
+      background-color: $background-100;
+      grid-area: header;
+    }
+    
+    aside {
+      background-color: $background-100;
+      grid-area: sidemenu;
+      min-width: 0;
+    }
+    
+    main {
+      background-color: $background-500;
+      grid-area: main;
+      min-width: 0;
+      padding: 16px;
+    }
+  }
 }

@@ -3,10 +3,12 @@
 
 @use "./components/synctrack-header";
 @use "./components/synctrack-sidemenu";
+@use "./components/synctrack-toast";
 
 @use "./layouts/hsxxx-layout";
 @use "./layouts/xxxxx-layout";
 
 @use "./pages/login";
-@use "./pages/project";
-@use "./pages/dashboard";
+// @use "./pages/project";
+// @use "./pages/dashboard";
+@use "./pages/board";

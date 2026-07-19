@@ -1,4 +1,4 @@
-import { ControllerClass } from "./types/controller";
+import { ControllerClass } from "./types/Controller";
 
 const controllers = import.meta.glob<{ default: ControllerClass }>("./pages/*.ts");
 

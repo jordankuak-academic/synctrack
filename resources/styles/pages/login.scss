@@ -1,387 +1,252 @@
-@use "../abstracts/animations" as *;
 @use "../abstracts/variables" as *;
+@use "../abstracts/mixins" as *;
 
 #login-wrapper {
   align-items: center;
-  background-color: $background;
   display: flex;
+  height: 100vh;
   justify-content: center;
-  min-height: 100vh;
-  padding: 56px 24px;
-  width: 100%;
+  width: 100vw;
   
   .login-card {
-    max-width: 1040px;
-    width: 100%;
+    background-color: $base-white;
+    border: 2px solid $background-900;
+    border-radius: 12px;
+    display: grid;
+    grid-template-areas: "left right";
+    grid-template-columns: 1fr 1fr;
+    height: 610px;
+    width: 1200px;
     
-    &--split {
-      background: #FFFFFF;
+    .left {
+      align-items: center;
+      background: linear-gradient(223deg, #CEDAFF 0%, #637CCA 100%);
+      border: 1px solid $neutral-300;
       border-radius: 12px;
-      box-shadow: 0 24px 64px rgba(17, 19, 26, 0.12);
       display: flex;
+      grid-area: left;
+      height: inherit;
+      justify-content: center;
       overflow: hidden;
-      width: 100%;
-    }
-  }
-  
-  .left-section {
-    align-items: center;
-    background-color: $primary-extra-light;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 24px;
-    justify-content: center;
-    min-height: 560px;
-    padding: 56px 40px;
-    
-    .logo-wrapper {
-      background: rgba(17, 19, 26, 0.15);
-      height: 240px;
-      width: 240px;
-    }
-    
-    .application-title {
-      color: #FFFFFF;
-    }
-  }
-  
-  .right-section {
-    align-items: center;
-    background: #FFFFFF;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 560px;
-    padding: 32px 40px 40px;
-    
-    .navigation-tab {
-      background: $neutral-100;
-      border-radius: 10px;
-      display: flex;
-      gap: 4px;
-      margin-bottom: 32px;
-      max-width: 460px;
-      padding: 4px;
-      width: 100%;
+      padding: 40px;
+      text-align: center;
       
-      .tab-item {
+      .left-brand {
         align-items: center;
-        border-radius: 8px;
-        cursor: pointer;
         display: flex;
-        flex: 1;
-        height: 32px;
-        justify-content: center;
-        user-select: none;
+        flex-direction: column;
+        height: 100%;
+        justify-content: space-between;
+        width: 100%;
+      }
+      
+      .left-logo {
+        aspect-ratio: 1 / 1;
+        display: block;
+        margin-top: 30px;
+        max-width: 140px;
+        object-fit: contain;
+        width: 100%;
+      }
+      
+      .left-copy {
+        align-items: center;
+        color: $base-white;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: auto;
         
-        span {
-          color: $neutral-500;
-          font-size: 12px;
-          font-weight: 500;
+        h1,
+        p {
+          color: inherit;
+          margin: 0;
         }
-        
-        &.active {
-          background: $button-primary;
-          
-          span {
-            color: #FFFFFF;
-          }
-        }
+      }
+      
+      .left-copy-body {
+        max-width: 360px;
+        width: 100%;
+      }
+      
+      .left-banner {
+        display: block;
+        margin-bottom: 24px;
+        margin-top: auto;
+        max-width: 100%;
+        object-fit: contain;
+        width: 390px;
       }
     }
     
-    .navigation-content {
-      max-width: 460px;
-      width: 100%;
+    .right {
+      display: flex;
+      flex-direction: column;
+      grid-area: right;
+      height: inherit;
+      padding: 16px;
       
-      .sign-in-wrapper {
-        display: none;
-        margin: 0 auto;
-        max-width: 360px;
-        flex-direction: column;
-        gap: 16px;
-        width: 100%;
+      .nav-container {
+        background-color: $neutral-100;
+        border-radius: 8px;
+        display: flex;
+        height: 52px;
+        margin: 16px;
+        padding: 8px;
         
-        &.active {
+        .nav-item {
+          @include label-m;
+          align-items: center;
+          border-radius: 8px;
           display: flex;
+          justify-content: center;
+          width: 50%;
+          
+          &.active {
+            background-color: $primary-500;
+            color: $base-white;
+          }
+        }
+      }
+      
+      .nav-content {
+        display: flex;
+        flex: 1;
+        margin: 16px;
+        overflow: hidden;
+        
+        .login-container,
+        .sign-up-container {
+          align-items: center;
+          display: none;
+          flex: 1;
+          flex-direction: column;
+          justify-content: flex-start;
+          width: 100%;
+          
+          &.active {
+            display: flex;
+          }
         }
         
-        .form-title {
-          margin-bottom: 8px;
-          text-align: center;
+        .sign-up-part {
+          display: none;
+          flex: 1;
+          flex-direction: column;
+          width: 100%;
+          
+          &.active {
+            display: flex;
+          }
         }
         
         form {
           display: flex;
+          flex: 1;
           flex-direction: column;
-          gap: 16px;
+          margin-top: 16px;
+          width: 100%;
+          
+          .sign-up-part {
+            display: none;
+            
+            .step-title {
+              color: $primary-500;
+            }
+            
+            &.active {
+              display: flex;
+            }
+          }
+          
+          .row-group {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            
+            > .form-group,
+            > .form-action {
+              flex: 1;
+              min-width: 0;
+              width: 100%;
+            }
+          }
+          
+          .form-footer {
+            margin-top: auto;
+            width: 100%;
+          }
           
           .form-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            
-            label {
-              font-size: 12px;
-              font-weight: 600;
-            }
-            
-            input {
-              background: #FFFFFF;
-              border: 1px solid $border-color;
-              border-radius: 10px;
-              color: $neutral-900;
-              height: 44px;
-              font-size: 14px;
-              outline: none;
-              padding: 10px 12px;
-              width: 100%;
-              
-              &::placeholder {
-                color: $placeholder;
-                font-size: 10px;
-              }
-              
-              &:focus {
-                border-color: $primary-dark;
-              }
-            }
-            
-            .password-field {
-              position: relative;
-              width: 100%;
-              
-              input {
-                padding-right: 40px;
-              }
-              
-              .password-toggle {
-                align-items: center;
-                background: transparent;
-                border: 0;
-                cursor: pointer;
-                display: inline-flex;
-                height: 16px;
-                justify-content: center;
-                padding: 0;
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 16px;
-                
-                .toggle-icon {
-                  height: 15px;
-                  stroke-width: 2;
-                  width: 15px;
-                }
-                
-                .icon-eye {
-                  display: none;
-                }
-                
-                &.is-visible {
-                  .icon-eye {
-                    display: block;
-                  }
-                  
-                  .icon-eye-off {
-                    display: none;
-                  }
-                }
-              }
-            }
+            justify-content: center;
+            margin: 8px 0;
+            position: relative;
           }
           
-          .sign-in-btn {
-            background: $button-primary;
-            border: 0;
+          input {
+            @include body-m;
+            
             border-radius: 10px;
-            color: #FFFFFF;
-            cursor: pointer;
-            font-weight: 500;
+            color: $neutral-900;
             height: 44px;
-            margin-top: 24px;
+            padding: 0 12px;
             
-            &:hover {
-              filter: brightness(0.96);
+            &:focus {
+              outline-color: $primary-700;
+            }
+            
+            &::placeholder {
+              @include body-m;
+              color: $neutral-300;
             }
           }
-        }
-      }
-      
-      .sign-up-wrapper {
-        display: none;
-        margin: 0 auto;
-        max-width: 460px;
-        flex-direction: column;
-        width: 100%;
-        
-        &.active {
-          display: flex;
-        }
-        
-        .form-title {
-          text-align: center;
-        }
-        
-        .form-divider {
-          background: $neutral-100;
-          height: 1px;
-          margin-bottom: 16px;
-          width: 100%;
-        }
-        
-        form {
-          display: flex;
-          position: relative;
-          flex-direction: column;
-          min-height: 336px;
-          width: 100%;
-          overflow: hidden;
-          transition: height 320ms cubic-bezier(0.16, 1, 0.3, 1);
           
-          .sign-up-step {
-            @include slide-panel-transition(20px, 320ms);
-            display: none;
-            flex-direction: column;
-            gap: 14px;
-            min-height: 336px;
-            width: 100%;
-            background: #FFFFFF;
+          .password-input,
+          .confirm-password-input {
+            padding-right: 48px;
+          }
+          
+          .password-toggle-btn {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            bottom: 12px;
+            color: $neutral-900;
+            cursor: pointer;
+            display: inline-flex;
+            height: 20px;
+            justify-content: center;
+            padding: 0;
+            position: absolute;
+            right: 12px;
+            width: 20px;
             
-            &.active {
-              display: flex;
-            }
-            
-            &.is-entering-right,
-            &.is-leaving-left {
-              display: flex;
-              inset: 0;
+            .toggle-icon {
+              height: 18px;
               position: absolute;
+              stroke-width: 2;
+              transition: opacity 0.2s ease;
+              width: 18px;
             }
             
-            &.is-entering-right {
-              z-index: 2;
+            .icon-eye {
+              opacity: 0;
             }
             
-            &.is-leaving-left {
-              z-index: 1;
+            .icon-eye-off {
+              opacity: 1;
             }
             
-            .step-title {
-              color: #6F7691;
-              font-size: 14px;
-              font-weight: 400;
-              line-height: 150%;
-            }
-            
-            .form-row {
-              display: grid;
-              gap: 12px;
-              grid-template-columns: 1fr 1fr;
-            }
-            
-            .form-group {
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-              
-              label {
-                color: $neutral-900;
-                font-size: 12px;
-                font-weight: 600;
-                line-height: 140%;
+            &.is-visible {
+              .icon-eye {
+                opacity: 1;
               }
               
-              input {
-                background: #FFFFFF;
-                border: 1px solid $border-color;
-                border-radius: 8px;
-                color: $neutral-900;
-                height: 38px;
-                font-size: 12px;
-                line-height: 140%;
-                outline: none;
-                padding: 10px 12px;
-                width: 100%;
-                
-                &::placeholder {
-                  color: $placeholder;
-                  font-size: 10px;
-                }
-                
-                &:focus {
-                  border-color: $primary-dark;
-                }
-              }
-              
-              .password-field {
-                position: relative;
-                
-                input {
-                  padding-right: 40px;
-                }
-                
-                .password-toggle {
-                  align-items: center;
-                  background: transparent;
-                  border: 0;
-                  cursor: pointer;
-                  display: inline-flex;
-                  height: 16px;
-                  justify-content: center;
-                  padding: 0;
-                  position: absolute;
-                  right: 12px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  width: 16px;
-                  
-                  .toggle-icon {
-                    height: 15px;
-                    stroke-width: 2;
-                    width: 15px;
-                  }
-                  
-                  .icon-eye {
-                    display: none;
-                  }
-                  
-                  &.is-visible {
-                    .icon-eye {
-                      display: block;
-                    }
-                    
-                    .icon-eye-off {
-                      display: none;
-                    }
-                  }
-                }
-              }
-            }
-            
-            .step-btn {
-              align-self: center;
-              background: $button-primary;
-              border: 0;
-              border-radius: 10px;
-              color: #FFFFFF;
-              cursor: pointer;
-              font-size: 14px;
-              font-weight: 500;
-              height: 44px;
-              line-height: 140%;
-              margin-top: auto;
-              width: 78%;
-              
-              &:hover {
-                filter: brightness(0.96);
-              }
-              
-              &.submit-btn {
-                margin-top: auto;
+              .icon-eye-off {
+                opacity: 0;
               }
             }
           }

@@ -3,121 +3,141 @@
 @section("page-title", "Login")
 
 @section("contents")
+  @php
+    $login = session("login_input", []);
+    $sign_up = session("register_input", []);
+  @endphp
+  
   <div id="login-wrapper">
-    <div class="login-card login-card--split">
-      <div class="left-section">
-        <div class="logo-wrapper"></div>
-        <div class="heading-02 application-title">SyncTrack</div>
-      </div>
-      <div class="right-section">
-        <div class="navigation-tab">
-          <div class="tab-item active">
-            <span class="sign-in-text">Sign In</span>
+    <div class="login-card">
+      <div class="left">
+        <div class="left-brand">
+          <img class="left-logo" src="{{ asset("images/system-logo.png") }}" alt="SyncTrack logo">
+          <div class="left-copy">
+            <h1 class="heading-01">SyncTrack</h1>
+            <div class="left-copy-body">
+              <p class="heading-04">Manage projects. Track tasks. Collaborate better.</p>
+            </div>
           </div>
-          <div class="tab-item">
-            <span class="sign-up-text">Sign Up</span>
+          <img class="left-banner" src="{{ asset("images/login-banner.png") }}" alt="SyncTrack collaboration illustration">
+        </div>
+      </div>
+      
+      <div class="right">
+        <div class="nav-container">
+          <div class="nav-item active" data-tab="login">
+            <span class="label-m">Login</span>
+          </div>
+          <div class="nav-item" data-tab="sign-up">
+            <span class="label-m">Sign Up</span>
           </div>
         </div>
-        <div class="navigation-content">
-          <div class="sign-in-wrapper active">
-            <h1 class="heading-01 form-title">Sign In</h1>
+        
+        <div class="nav-content" data-content="login">
+          <section class="login-container active">
+            <h2 class="heading-01">Welcome Back</h2>
             
             <form action="{{ route("login.submit") }}" method="post">
               @csrf
+              <div class="form-group">
+                <label for="email" class="heading-04">Email</label>
+                <input type="email" name="email" class="email-input" placeholder="you@example.com" value="{{ $login["email"] ?? "" }}" required>
+              </div>
               
               <div class="form-group">
-                <label for="email" class="email-label">Email</label>
-                <input type="email" name="email" placeholder="you@example.com" value="{{ old("email") }}" required>
+                <label for="password" class="heading-04">Password</label>
+                <input id="login-password" type="password" name="password" class="password-input" placeholder="**********" required>
+                <button type="button" id="login-password-toggle" class="password-toggle-btn" aria-label="Show password" aria-pressed="false">
+                  <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                  <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                </button>
               </div>
-              <div class="form-group">
-                <label for="login-password" class="password-label">Password</label>
-                <div class="password-field">
-                  <input id="login-password" type="password" name="password" placeholder="*******************" required>
-                  <button type="button" class="password-toggle" data-password-toggle data-target="login-password" aria-label="Show password" aria-pressed="false">
-                    <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
-                    <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
-                  </button>
+              
+              <div class="form-footer">
+                <div class="form-action">
+                  <button class="st-btn st-btn-primary st-btn-block">Sign In</button>
                 </div>
               </div>
-              
-              <input type="hidden" name="is_remember" value="0">
-              
-              <div class="form-group">
-                <button type="submit" class="sign-in-btn">Sign In</button>
-              </div>
             </form>
-          </div>
-          <div class="sign-up-wrapper">
-            <h1 class="heading-01 form-title">Sign Up</h1>
-            
-            <div class="form-divider"></div>
+          </section>
+          
+          <section class="sign-up-container" data-step="1">
+            <h2 class="heading-01">Sign Up</h2>
             
             <form action="{{ route("register.submit") }}" method="post">
               @csrf
-              <input type="hidden" name="identifier" value="">
-              
-              <div class="sign-up-step active">
-                <p class="step-title">Step 1 : Create Your Account</p>
+              <div id="step-1" class="sign-up-part active">
+                <p class="step-title body-l">Step 1 of 2</p>
                 
                 <div class="form-group">
-                  <label for="register-email">Email</label>
-                  <input id="register-email" type="email" name="email" placeholder="you@example.com" required>
+                  <label for="email" class="heading-04">Email</label>
+                  <input type="email" name="email" class="email-input" placeholder="you@example.com" value="{{ $sign_up["email"] ?? "" }}" required>
                 </div>
                 
                 <div class="form-group">
-                  <label for="register-username">Username</label>
-                  <input id="register-username" type="text" name="username" placeholder="Enter Your Username" required>
+                  <label for="username" class="heading-04">Username</label>
+                  <input type="text" name="username" class="username-input" placeholder="Enter Your Username" value="{{ $sign_up["username"] ?? "" }}" required>
                 </div>
                 
-                <div class="form-row">
+                <div class="row-group">
                   <div class="form-group">
-                    <label for="register-password">Password</label>
-                    <div class="password-field">
-                      <input id="register-password" type="password" name="password" placeholder="*******************" required>
-                      <button type="button" class="password-toggle" data-password-toggle data-target="register-password" aria-label="Show password" aria-pressed="false">
-                        <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
-                        <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
-                      </button>
-                    </div>
+                    <label for="password" class="heading-04">Password</label>
+                    <input id="sign-up-password" type="password" name="password" class="password-input" placeholder="**********" required>
+                    <button type="button" id="sign-up-password-toggle" class="password-toggle-btn" aria-label="Show password" aria-pressed="false">
+                      <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                      <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                    </button>
                   </div>
                   
                   <div class="form-group">
-                    <label for="register-password-confirmation">Confirm Password</label>
-                    <div class="password-field">
-                      <input id="register-password-confirmation" type="password" name="password_confirmation" placeholder="*******************" required>
-                      <button type="button" class="password-toggle" data-password-toggle data-target="register-password-confirmation" aria-label="Show password" aria-pressed="false">
-                        <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
-                        <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
-                      </button>
-                    </div>
+                    <label for="confirm-password" class="heading-04">Confirm Password</label>
+                    <input id="sign-up-confirm-password" type="password" name="confirm-password" class="confirm-password-input" placeholder="**********" required>
+                    <button type="button" id="sign-up-confirm-password-toggle" class="password-toggle-btn" aria-label="Show password" aria-pressed="false">
+                      <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
+                      <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />
+                    </button>
                   </div>
                 </div>
                 
-                <button type="button" class="step-btn">Next</button>
+                <div class="form-footer">
+                  <div class="form-action">
+                    <button type="button" id="next-btn" class="st-btn st-btn-primary st-btn-block">Next</button>
+                  </div>
+                </div>
               </div>
               
-              <div class="sign-up-step">
-                <p class="step-title">Step 2 : Personal Information</p>
+              <div id="step-2" class="sign-up-part">
+                <p class="step-title body-l">Step 2 of 2</p>
                 
                 <div class="form-group">
-                  <label for="register-fullname">Full Name</label>
-                  <input id="register-fullname" type="text" name="fullname" placeholder="Enter Your Full Name" required>
+                  <label for="fullname" class="heading-04">Full Name</label>
+                  <input type="text" name="fullname" class="fullname-input" placeholder="Enter Your Full Name" value="{{ $sign_up["fullname"] ?? "" }}" required>
                 </div>
                 
                 <div class="form-group">
-                  <label for="register-nric">NRIC</label>
-                  <input id="register-nric" type="text" name="nric" placeholder="Enter Your NRIC" required>
+                  <label for="nric" class="heading-04">NRIC</label>
+                  <input type="text" name="nric" class="nric-input" placeholder="Enter Your NRIC" value="{{ $sign_up["nric"] ?? "" }}" required>
                 </div>
                 
                 <div class="form-group">
-                  <label for="register-contact">Contact Number</label>
-                  <input id="register-contact" type="text" name="contact" placeholder="Enter Your Contact Number" required>
+                  <label for="contact" class="heading-04">Contact Number</label>
+                  <input type="text" name="contact" class="contact-input" placeholder="Enter Your Contact Number" value="{{ $sign_up["contact"] ?? "" }}" required>
                 </div>
                 
-                <button type="submit" class="step-btn submit-btn">Sign Up</button>
+                <div class="form-footer">
+                  <div class="row-group">
+                    <div class="form-action">
+                      <button type="button" id="back-btn" class="st-btn st-btn-secondary st-btn-block">Back</button>
+                    </div>
+                    
+                    <div class="form-action">
+                      <button type="submit" class="st-btn st-btn-primary st-btn-block">Create Account</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </form>
-          </div>
+          </section>
         </div>
       </div>
     </div>

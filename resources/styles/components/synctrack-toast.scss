@@ -1,0 +1,41 @@
+@use "../abstracts/animations" as *;
+@use "../abstracts/variables" as *;
+@use "../abstracts/mixins" as *;
+
+.toast-wrapper {
+  @include label-m;
+  @include toast-transition;
+  
+  align-items: center;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(17, 19, 26, 0.16);
+  display: inline-flex;
+  justify-content: center;
+  left: 50%;
+  max-width: calc(100vw - 32px);
+  min-width: 180px;
+  padding: 14px 20px;
+  pointer-events: none;
+  position: fixed;
+  text-align: center;
+  top: 16px;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 1200;
+  
+  &.is-success {
+    background-color: $success-500;
+    color: $base-white;
+  }
+  
+  &.is-error {
+    background-color: $danger-500;
+    color: $base-white;
+  }
+  
+  .toast-message {
+    display: block;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}

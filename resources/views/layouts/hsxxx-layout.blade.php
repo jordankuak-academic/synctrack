@@ -11,16 +11,18 @@
     @vite(["resources/styles/app.scss"])
   </head>
   
-  <body>
-    <header class="hsxxx-header">
+  <body class="st-hsxxx-layout">
+    <x-synctrack-toast />
+    
+    <header>
       <x-synctrack-header />
     </header>
     
-    <aside class="hsxxx-sidemenu">
+    <aside>
       <x-synctrack-sidemenu />
     </aside>
     
-    <main class="hsxxx-main">
+    <main>
       @yield("contents")
     </main>
     
