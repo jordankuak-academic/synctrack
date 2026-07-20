@@ -1,4 +1,5 @@
 import Controller from "@/utils/Controller";
+
 type TaskStatus = "assigned" | "in-progress" | "done";
 type TaskPriority = "" | "Low" | "Medium" | "High";
 interface Task {
