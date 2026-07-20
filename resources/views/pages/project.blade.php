@@ -11,25 +11,25 @@
   @endphp
   
   <div id="project-wrapper">
-    <div class="project-header">
+    <header class="page-header project-header">
       <h1 class="heading-01">Project List</h1>
       
       <div id="header-default-actions" class="header-actions active">
-        <button id="create-project-btn" class="btn btn-primary">Create Project</button>
+        <button id="create-project-btn" class="btn primary-btn">Create Project</button>
       </div>
       <div id="header-create-actions" class="header-actions">
-        <button id="cancel-project-btn" class="btn btn-secondary">Cancel</button>
-        <button id="save-project-btn" class="btn btn-primary">Create</button>
+        <button id="cancel-project-btn" class="btn secondary-btn">Cancel</button>
+        <button id="save-project-btn" class="btn primary-btn">Create</button>
       </div>
       <div id="header-project-detail-actions" class="header-actions">
-        <button id="delete-project-btn" class="btn btn-danger">Delete</button>
-        <button id="edit-project-btn" class="btn btn-primary">Edit</button>
+        <button id="delete-project-btn" class="btn danger-btn">Delete</button>
+        <button id="edit-project-btn" class="btn primary-btn">Edit</button>
       </div>
       <div id="header-project-edit-actions" class="header-actions">
-        <button id="cancel-project-edit-btn" class="btn btn-secondary">Cancel</button>
-        <button id="save-project-edit-btn" class="btn btn-primary">Save</button>
+        <button id="cancel-project-edit-btn" class="btn secondary-btn">Cancel</button>
+        <button id="save-project-edit-btn" class="btn primary-btn">Save</button>
       </div>
-    </div>
+    </header>
     <div class="project-body">
       <aside class="project-list-card">
         <div class="card-header">
@@ -135,7 +135,7 @@
               @foreach ($allProjects as $project)
                 <div class="project-task-panel" data-project-id="{{ $project['id'] }}" data-project-title="{{ $project['title'] }}" data-project-description="{{ $project['description'] ?? '' }}" hidden>
                   <div class="task-list" data-task-list>
-                    @forelse ($project['tasks'] ?? [] as $task)
+                    @foreach ($project['tasks'] ?? [] as $task)
                       @php
                         $subTasks = $task['sub_tasks'] ?? [];
                         $taskStatus = ['draft' => 'assigned', 'in_progress' => 'in-progress', 'completed' => 'done'][$task['status'] ?? 'draft'] ?? 'assigned';
@@ -254,9 +254,7 @@
                         <span>+</span>
                         <span>Create SubTask</span>
                       </button>
-                    @empty
-                      <div class="task-empty"><p class="body-l">No task available.</p></div>
-                    @endforelse
+                    @endforeach
                   </div>
                 </div>
               @endforeach
@@ -328,66 +326,6 @@
                 </section>
               </div>
             @endforeach
-          </div>
-        </div>
-        
-        <div id="toast-success" class="project-toast success">
-          <span class="toast-icon">✓</span>
-          
-          <div class="toast-content">
-            <div class="toast-title label-m">Success</div>
-            <div class="toast-message helper-text">Create project successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-error" class="project-toast error">
-          <span class="toast-icon">✕</span>
-          
-          <div class="toast-content">
-            <div class="toast-title label-m">Failed</div>
-            <div class="toast-message helper-text">Create project failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-task-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete task successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-update-success" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Update project detail successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-update-error" class="project-toast error">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Update project detail failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete project successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-add-success" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Add member successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-add-error" class="project-toast error">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Add member failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete member successfully.</div>
           </div>
         </div>
       </section>

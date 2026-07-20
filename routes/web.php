@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubTaskController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +39,10 @@ Route::middleware("auth")->group(function() {
     Route::delete("/subtask/{id}", [SubTaskController::class, "destroy"])->name("subtask.destroy");
     
     Route::get("/dashboard", [DashboardController::class, "index"])->name("dashboard");
+<<<<<<< HEAD
     Route::get("/board", [BoardController::class, "index"])->name("board");
+=======
+>>>>>>> d7d2218 (WIP: save profile and project changes)
     Route::get("/profile", [ProfileController::class, "show"])->name("profile.show");
     Route::put("/profile", [ProfileController::class, "update"])->name("profile.update");
     Route::put("/profile/password", [ProfileController::class, "updatePassword"])->name("profile.password.update");
