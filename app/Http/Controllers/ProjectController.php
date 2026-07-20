@@ -25,6 +25,7 @@ class ProjectController extends Controller {
         $projects = Project::with(["tasks", "tasks.subTasks", "members.user", "creator"])
             ->where(function($query) use ($current_user) {
                 $query->where("creator_id", $current_user->id)
+                    ->orWhereHas("members", fn($query) => $query->where("user_id", $current_user->id))
                     ->orWhereHas("tasks", fn($query) => $query->where("assignee_id", $current_user->id))
                     ->orWhereHas("tasks.subTasks", fn($query) => $query->where("assignee_id", $current_user->id));
             })
@@ -34,14 +35,18 @@ class ProjectController extends Controller {
                     ->filter(fn($member) => $member->user !== null)
                     ->map(fn($member) => [
                         "id" => $member->user_id,
+                        "membership_id" => $member->id,
                         "username" => $member->user->username,
                         "email" => $member->user->email,
+                        "role" => $member->duty_position ?? "Member",
                         "is_owner" => false
                     ])
                     ->prepend([
                         "id" => $project->creator->id,
+                        "membership_id" => null,
                         "username" => $project->creator->username,
                         "email" => $project->creator->email,
+                        "role" => "Owner",
                         "is_owner" => true,
                     ])
                     ->values();
