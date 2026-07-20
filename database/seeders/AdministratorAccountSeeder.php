@@ -13,7 +13,6 @@ class AdministratorAccountSeeder extends Seeder {
         DB::table("users")->insert([
             "fullname" => "SyncTrack Administrator",
             "username" => "admin",
-            "identifier" => "S_ADMIN",
             "email" => "admin@synctrack.com",
             "password" => Hash::make("admin123"),
             "nric" => "010203040567",
