@@ -21,6 +21,12 @@
         "menu_title" => "Projects",
         "lucide_icon" => "folder-bookmark"
       ],
+      [
+        "route_link" => "/profile",
+        "route_name" => "profile.*",
+        "menu_title" => "Profile",
+        "lucide_icon" => "user"
+      ],
     ];
   @endphp
   

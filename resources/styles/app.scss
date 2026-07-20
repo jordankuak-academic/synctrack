@@ -9,6 +9,7 @@
 @use "./layouts/xxxxx-layout";
 
 @use "./pages/login";
-// @use "./pages/project";
-// @use "./pages/dashboard";
+@use "./pages/project";
+@use "./pages/dashboard";
 @use "./pages/board";
+@use "./pages/profile";
