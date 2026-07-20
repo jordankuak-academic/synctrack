@@ -1,240 +1,307 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/mixins" as *;
 
-$page-background: #F0F3FF;
-$card-background: #FFFFFF;
-$hover-background: #EEF1FF;
-$blocked-border-color: #FCA5A5;
-$blocked-background: #FEF2F2;
-$text-muted: $neutral-500;
-$card-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
-$task-card-shadow: 0 8px 20px rgba(17, 19, 26, 0.06);
-$task-card-hover-shadow: 0 12px 26px rgba(17, 19, 26, 0.1);
+$panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
 
 #dashboard-wrapper {
-  min-height: 100%;
-  padding: 16px;
-  background: $page-background;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  overflow: hidden;
+  color: $neutral-900;
   font-family: $font-family;
 
-  .dashboard-content {
-    width: 100%;
-    min-height: calc(100vh - 72px);
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 48px minmax(0, 1fr) minmax(0, 1fr);
-    gap: 20px;
-  }
-
   .dashboard-header {
-    display: flex;
-    align-items: center;
+    flex-shrink: 0;
   }
 
-  .task-list {
+  .dashboard-header p {
+    margin-top: 4px;
+    color: $neutral-500;
+  }
+
+  .dashboard-content {
+    height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 20px;
-    align-items: stretch;
+    grid-auto-rows: max-content;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 4px;
   }
 
-  .task-column {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid $border-color;
+  .dashboard-summary-grid,
+  .dashboard-overview-grid,
+  .status-summary-list,
+  .project-ratio-list {
+    display: grid;
+    gap: 16px;
+  }
+
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-overview-grid {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .dashboard-summary-card,
+  .dashboard-panel,
+  .status-summary-card,
+  .project-ratio-list > div {
+    border: 1px solid $neutral-100;
     border-radius: 8px;
-    background: $card-background;
-    box-shadow: $card-shadow;
-    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    background: $base-white;
+    box-shadow: $panel-shadow;
   }
 
-  .task-column.is-drag-over {
-    border-color: $primary-light;
-    background: $hover-background;
-    transform: translateY(-2px);
-  }
-
-  .task-column.is-drop-blocked {
-    border-color: $blocked-border-color;
-    background: $blocked-background;
-  }
-
-  .task-column-header {
-    display: flex;
+  .dashboard-summary-card {
+    min-height: 132px;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 8px 14px;
     align-items: center;
-    justify-content: space-between;
-    padding: 18px 18px 14px;
-    border-bottom: 1px solid $border-color;
+    padding: 18px;
+    color: inherit;
+    text-decoration: none;
   }
 
-  .task-count {
-    min-width: 28px;
-    height: 28px;
+  a.dashboard-summary-card:hover,
+  .status-summary-card:hover {
+    border-color: $primary-300;
+  }
+
+  .summary-icon {
+    width: 46px;
+    height: 46px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid $border-color;
-    color:#000000;
+    grid-row: 1 / span 3;
     border-radius: 8px;
-    font-size: 13px;
+    background: $background-500;
+    color: $primary-700;
   }
 
-  .task-card-container {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  .summary-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .dashboard-summary-card--success .summary-icon {
+    background: $success-background;
+    color: $success-700;
+  }
+
+  .dashboard-summary-card--warning .summary-icon {
+    background: $warning-background;
+    color: $warning-700;
+  }
+
+  .dashboard-summary-card--neutral .summary-icon {
+    background: $background-100;
+    color: $neutral-700;
+  }
+
+  .summary-label,
+  .summary-meta,
+  .project-ratio-list span,
+  .status-summary-card span,
+  .project-select-field span {
+    color: $neutral-500;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .summary-label {
+    text-transform: uppercase;
+  }
+
+  .summary-value {
+    color: $neutral-900;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .dashboard-panel {
+    min-width: 0;
     padding: 18px;
-    overflow-y: auto;
   }
 
-  .task-card-container[hidden],
-  .empty-state[hidden] {
+  .panel-heading,
+  .graph-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .panel-heading p {
+    margin-top: 4px;
+    color: $neutral-500;
+  }
+
+  .panel-heading > strong {
+    min-width: 56px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: $background-500;
+    color: $primary-700;
+    font-size: 20px;
+  }
+
+  .project-ratio-list,
+  .status-summary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-ratio-list > div,
+  .status-summary-card {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    box-shadow: none;
+    text-decoration: none;
+  }
+
+  .project-ratio-list strong,
+  .status-summary-card strong {
+    color: $neutral-900;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .status-summary-card--completed strong {
+    color: $success-700;
+  }
+
+  .status-summary-card--progress strong {
+    color: $primary-700;
+  }
+
+  .graph-panel {
+    min-height: 430px;
+  }
+
+  .project-select-field {
+    min-width: min(320px, 100%);
+    display: grid;
+    gap: 6px;
+  }
+
+  .project-select-field select {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid $neutral-200;
+    border-radius: 8px;
+    background: $base-white;
+    color: $neutral-900;
+    font-family: $font-family;
+  }
+
+  .project-select-field select:disabled {
+    background: $neutral-100;
+    color: $neutral-400;
+  }
+
+  .graph-shell {
+    min-height: 330px;
+    display: grid;
+    place-items: center;
+    border: 1px solid $neutral-100;
+    border-radius: 8px;
+    background: $background-100;
+    overflow-x: auto;
+  }
+
+  .line-graph {
+    width: 100%;
+    min-width: 680px;
+    padding: 12px;
+  }
+
+  .graph-shell.is-empty .line-graph {
     display: none;
   }
 
-  .empty-state {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    color: $text-muted;
-    text-align: center;
+  .graph-shell:not(.is-empty) .line-graph {
+    display: block;
   }
 
-  .task-card {
-    position: relative;
-    display: grid;
-    grid-template-columns: 6px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: center;
-    border: 1px solid $border-color;
-    border-radius: 8px;
-    background: $card-background;
-    box-shadow: $task-card-shadow;
-    cursor: grab;
-    transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  .member-task-svg {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 
-  .task-card:hover {
-    box-shadow: $task-card-hover-shadow;
-    transform: translateY(-1px);
+  .graph-grid-line {
+    stroke: $neutral-100;
+    stroke-width: 1;
   }
 
-  .task-card.is-dragging {
-    background: $hover-background;
-    opacity: 0.72;
-    cursor: grabbing;
+  .graph-line {
+    fill: none;
+    stroke: $primary-500;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
   }
 
-  .task-status-indicator {
-    width: 6px;
-    height: 56px;
-    border-radius: 999px;
+  .graph-point {
+    fill: $base-white;
+    stroke: $primary-700;
+    stroke-width: 3;
   }
 
-  .task-status-indicator--in_progress {
-    background: $primary-light;
-  }
-
-  .task-status-indicator--completed {
-    background: $success-light;
-  }
-
-  .task-status-indicator--overdue {
-    background: $badge-high-text;
-  }
-
-  .task-card-content {
-    min-width: 0;
-    display:flex;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-
-  .task-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    margin-bottom: 4px;
-    color: $text-muted;
-    font-size: 11px;
-    line-height: 1.2;
-  }
-
-  .task-type-badge {
-    color: $primary-dark;
-    font-weight: 700;
-  }
-
-  .task-card-content p {
-    color: #000000;
-  }
-
-  .priority-badge {
-    align-self: start;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 68px;
-    padding: 6px 10px;
-    border-radius: 999px;
+  .graph-axis-label,
+  .graph-member-label,
+  .graph-value-label {
+    fill: $neutral-600;
     font-family: $font-family;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1;
-    white-space: nowrap;
   }
 
-  .priority-badge--low {
-    background: $badge-low-bg;
-    color: $badge-low-text;
+  .graph-value-label {
+    fill: $neutral-900;
   }
 
-  .priority-badge--medium {
-    background: $badge-medium-bg;
-    color: $badge-medium-text;
+  .graph-empty {
+    color: $neutral-500;
+    font-size: 14px;
   }
 
-  .priority-badge--high {
-    background: $badge-high-bg;
-    color: $badge-high-text;
-  }
-
-  .dashboard-future-content {
-    min-height: 0;
-    border: 1px dashed $border-color;
-    border-radius: 6px;
-  }
-
-  @media (max-width: 960px) {
-    .dashboard-content {
-      grid-template-rows: 48px auto minmax(240px, 1fr);
-      gap: 16px;
+  @media (max-width: 1180px) {
+    .dashboard-summary-grid,
+    .dashboard-overview-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
 
-    .task-list {
+  @media (max-width: 760px) {
+    .dashboard-summary-grid,
+    .dashboard-overview-grid,
+    .project-ratio-list,
+    .status-summary-list {
       grid-template-columns: 1fr;
     }
 
-    .task-column {
-      min-height: 420px;
-    }
-  }
-
-  @media (max-width: 560px) {
-    .task-card {
-      grid-template-columns: 6px minmax(0, 1fr);
+    .panel-heading,
+    .graph-heading {
+      display: grid;
     }
 
-    .priority-badge {
-      grid-column: 2;
-      justify-self: start;
+    .line-graph {
+      min-width: 560px;
     }
   }
 }

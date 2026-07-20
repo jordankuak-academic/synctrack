@@ -1,289 +1,214 @@
 import Controller from "@/utils/Controller";
 
-type DashboardColumn = "in_progress" | "completed" | "overdue";
-type EditableDashboardColumn = Exclude<DashboardColumn, "overdue">;
-type DashboardItemType = "task" | "subtask";
-
-type DragState = {
-  card: HTMLElement;
-  itemId: number;
-  itemType: DashboardItemType;
-  originalStatus: DashboardColumn;
-  originalTaskStatus: string;
-  originalContainer: HTMLElement;
-  originalNextSibling: ChildNode | null;
-  updateUrl: string;
+type MemberTaskStat = {
+  name: string;
+  task_count: number;
 };
 
-const editableColumns: EditableDashboardColumn[] = ["in_progress", "completed"];
+type ProjectTaskStat = {
+  project_id: string;
+  project_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  members: MemberTaskStat[];
+};
 
 export default class DashboardController extends Controller {
-  private dragState: DragState | null = null;
+  private projectStats: ProjectTaskStat[] = [];
 
   protected initialize(): void {
-    this.bindTaskCards();
-    this.bindColumnDropTargets();
-    this.refreshAllColumns();
+    this.projectStats = this.readProjectStats();
+    this.bindProjectSelector();
+    this.renderSelectedProjectGraph();
   }
 
-  private bindTaskCards(): void {
-    this.querySelectorAll<HTMLElement>(".task-card").forEach((card) => {
-      card.addEventListener("dragstart", (event) => {
-        const itemId = Number(card.dataset.itemId);
-        const itemType = this.getItemType(card);
-        const originalStatus = this.getCardStatus(card);
-        const originalContainer = card.closest<HTMLElement>(".task-card-container");
-        const updateUrl = card.dataset.updateUrl ?? "";
-
-        if (
-          itemId <= 0 ||
-          itemType == null ||
-          originalStatus == null ||
-          originalContainer == null ||
-          updateUrl.length === 0
-        ) {
-          event.preventDefault();
-          return;
-        }
-
-        this.dragState = {
-          card,
-          itemId,
-          itemType,
-          originalStatus,
-          originalTaskStatus: card.dataset.taskStatus ?? "",
-          originalContainer,
-          originalNextSibling: card.nextSibling,
-          updateUrl,
-        };
-
-        card.classList.add("is-dragging");
-        event.dataTransfer?.setData("text/plain", String(itemId));
-
-        if (event.dataTransfer != null) {
-          event.dataTransfer.effectAllowed = "move";
-        }
-      });
-
-      card.addEventListener("dragend", () => {
-        card.classList.remove("is-dragging");
-        this.clearAllDropStates();
-        this.dragState = null;
-      });
+  private bindProjectSelector(): void {
+    this.querySelector<HTMLSelectElement>("[data-project-stat-select]")?.addEventListener("change", () => {
+      this.renderSelectedProjectGraph();
     });
   }
 
-  private bindColumnDropTargets(): void {
-    this.querySelectorAll<HTMLElement>(".task-column").forEach((column) => {
-      column.addEventListener("dragover", (event) => {
-        event.preventDefault();
+  private renderSelectedProjectGraph(): void {
+    const selector = this.querySelector<HTMLSelectElement>("[data-project-stat-select]");
+    const selectedProjectId = this.normalizeProjectId(selector?.selectedOptions.item(0)?.value ?? selector?.value ?? this.projectStats[0]?.project_id ?? "");
+    const project = this.projectStats.find((item) => item.project_id === selectedProjectId) ?? this.projectStats[0] ?? null;
 
-        const targetStatus = this.getColumnStatus(column);
-        const isBlocked = targetStatus === "overdue";
-
-        column.classList.toggle("is-drop-blocked", isBlocked);
-        column.classList.toggle("is-drag-over", !isBlocked);
-
-        if (event.dataTransfer != null) {
-          event.dataTransfer.dropEffect = isBlocked ? "none" : "move";
-        }
-      });
-
-      column.addEventListener("dragleave", () => {
-        this.clearDropState(column);
-      });
-
-      column.addEventListener("drop", async (event) => {
-        event.preventDefault();
-        this.clearDropState(column);
-
-        const targetStatus = this.getColumnStatus(column);
-        const targetContainer = targetStatus == null
-          ? null
-          : this.getColumnContainer(targetStatus);
-
-        if (
-          this.dragState == null ||
-          targetStatus == null ||
-          targetContainer == null ||
-          !this.isValidStatusChange(this.dragState.originalStatus, targetStatus)
-        ) {
-          return;
-        }
-
-        await this.moveDashboardItem(this.dragState, targetStatus, targetContainer);
-      });
-    });
+    this.renderLineGraph(project);
   }
 
-  private async moveDashboardItem(
-    dragState: DragState,
-    targetStatus: EditableDashboardColumn,
-    targetContainer: HTMLElement,
-  ): Promise<void> {
-    this.placeCard(dragState.card, targetContainer, targetStatus);
+  private renderLineGraph(project: ProjectTaskStat | null): void {
+    const graphShell = this.querySelector<HTMLElement>(".graph-shell");
+    const graph = this.querySelector<HTMLElement>("[data-member-task-graph]");
+    const empty = this.querySelector<HTMLElement>("[data-graph-empty]");
 
-    try {
-      const token = this.getCsrfToken();
-      const response = await fetch(dragState.updateUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          Accept: "application/json",
-          "X-CSRF-TOKEN": token,
-        },
-        body: this.buildUpdatePayload(dragState.card, targetStatus, token),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Unable to update ${dragState.itemType} status.`);
-      }
-    } catch (error) {
-      this.restoreTaskPosition(dragState);
-      console.error(error);
-    } finally {
-      this.refreshAllColumns();
-    }
-  }
-
-  private placeCard(
-    card: HTMLElement,
-    targetContainer: HTMLElement,
-    targetStatus: EditableDashboardColumn,
-  ): void {
-    targetContainer.appendChild(card);
-    card.dataset.currentStatus = targetStatus;
-    card.dataset.taskStatus = targetStatus;
-    this.updateStatusIndicator(card, targetStatus);
-    this.refreshAllColumns();
-  }
-
-  private buildUpdatePayload(
-    card: HTMLElement,
-    targetStatus: EditableDashboardColumn,
-    token: string,
-  ): URLSearchParams {
-    return new URLSearchParams({
-      assignee_id: card.dataset.assigneeId ?? "",
-      title: card.dataset.title ?? "",
-      due_date: card.dataset.dueDate ?? "",
-      priority: card.dataset.priority ?? "",
-      status: targetStatus,
-      _token: token,
-      _method: "PUT",
-    });
-  }
-
-  private restoreTaskPosition(dragState: DragState): void {
-    dragState.originalContainer.insertBefore(
-      dragState.card,
-      dragState.originalNextSibling,
-    );
-    dragState.card.dataset.currentStatus = dragState.originalStatus;
-    dragState.card.dataset.taskStatus = dragState.originalTaskStatus;
-    this.updateStatusIndicator(dragState.card, dragState.originalStatus);
-  }
-
-  private refreshAllColumns(): void {
-    this.querySelectorAll<HTMLElement>(".task-column").forEach((column) => {
-      const status = this.getColumnStatus(column);
-
-      if (status != null) {
-        this.refreshColumn(status);
-      }
-    });
-  }
-
-  private refreshColumn(status: DashboardColumn): void {
-    const container = this.getColumnContainer(status);
-    const count = this.querySelector<HTMLElement>(`[data-count-for="${status}"]`);
-    const emptyState = this.querySelector<HTMLElement>(
-      `[data-empty-state="${status}"]`,
-    );
-    const taskCount = container?.querySelectorAll(".task-card").length ?? 0;
-
-    if (count != null) {
-      count.textContent = String(taskCount);
-    }
-
-    if (container != null) {
-      container.hidden = taskCount === 0;
-    }
-
-    if (emptyState != null) {
-      emptyState.hidden = taskCount > 0;
-    }
-  }
-
-  private isValidStatusChange(
-    originalStatus: DashboardColumn,
-    targetStatus: DashboardColumn,
-  ): targetStatus is EditableDashboardColumn {
-    if (!editableColumns.includes(targetStatus as EditableDashboardColumn)) {
-      return false;
-    }
-
-    if (originalStatus === targetStatus) {
-      return false;
-    }
-
-    return originalStatus !== "overdue" || targetStatus === "completed";
-  }
-
-  private updateStatusIndicator(card: HTMLElement, status: DashboardColumn): void {
-    const indicator = card.querySelector<HTMLElement>(".task-status-indicator");
-
-    if (indicator == null) {
+    if (graph == null || empty == null) {
       return;
     }
 
-    indicator.classList.remove(
-      "task-status-indicator--in_progress",
-      "task-status-indicator--completed",
-      "task-status-indicator--overdue",
-    );
-    indicator.classList.add(`task-status-indicator--${status}`);
-  }
+    graphShell?.classList.remove("is-empty");
+    graph.hidden = false;
+    graph.removeAttribute("hidden");
+    graph.classList.remove("is-empty");
+    graph.style.removeProperty("display");
+    empty.hidden = true;
+    graph.replaceChildren();
 
-  private getColumnStatus(column: HTMLElement): DashboardColumn | null {
-    return this.toDashboardColumn(column.dataset.column);
-  }
+    const members = project?.members ?? [];
+    const hasData = members.length > 0 && members.some((member) => member.task_count > 0);
 
-  private getCardStatus(card: HTMLElement): DashboardColumn | null {
-    return this.toDashboardColumn(card.dataset.currentStatus);
-  }
-
-  private getColumnContainer(status: DashboardColumn): HTMLElement | null {
-    return this.querySelector<HTMLElement>(`[data-card-container="${status}"]`);
-  }
-
-  private getItemType(card: HTMLElement): DashboardItemType | null {
-    if (card.dataset.itemType === "task" || card.dataset.itemType === "subtask") {
-      return card.dataset.itemType;
+    if (graphShell != null && project != null) {
+      graphShell.dataset.activeProjectId = project.project_id;
     }
 
-    return null;
-  }
-
-  private toDashboardColumn(value: string | undefined): DashboardColumn | null {
-    if (value === "in_progress" || value === "completed" || value === "overdue") {
-      return value;
+    if (!hasData) {
+      graphShell?.classList.add("is-empty");
+      empty.hidden = false;
+      return;
     }
 
-    return null;
-  }
+    const width = 760;
+    const height = 320;
+    const padding = { top: 28, right: 28, bottom: 78, left: 48 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const maxValue = Math.max(...members.map((member) => member.task_count), 1);
+    const points = members.map((member, index) => {
+      const x = padding.left + (members.length === 1 ? chartWidth / 2 : (chartWidth / (members.length - 1)) * index);
+      const y = padding.top + chartHeight - (member.task_count / maxValue) * chartHeight;
 
-  private clearAllDropStates(): void {
-    this.querySelectorAll<HTMLElement>(".task-column").forEach((column) => {
-      this.clearDropState(column);
+      return { ...member, x, y };
     });
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("class", "member-task-svg");
+    svg.setAttribute("width", String(width));
+    svg.setAttribute("height", String(height));
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.setAttribute("aria-hidden", "true");
+
+    const gridLines = 4;
+    for (let index = 0; index <= gridLines; index += 1) {
+      const value = Math.round((maxValue / gridLines) * index);
+      const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
+
+      svg.appendChild(this.svgElement("line", {
+        x1: String(padding.left),
+        y1: String(y),
+        x2: String(width - padding.right),
+        y2: String(y),
+        class: "graph-grid-line",
+      }));
+      const label = this.svgElement("text", {
+        x: String(padding.left - 12),
+        y: String(y + 4),
+        class: "graph-axis-label",
+        "text-anchor": "end",
+      });
+      label.textContent = String(value);
+      svg.appendChild(label);
+    }
+
+    svg.appendChild(this.svgElement("polyline", {
+      points: points.map((point) => `${point.x},${point.y}`).join(" "),
+      class: "graph-line",
+    }));
+
+    points.forEach((point) => {
+      svg.appendChild(this.svgElement("circle", {
+        cx: String(point.x),
+        cy: String(point.y),
+        r: "5",
+        class: "graph-point",
+      }));
+
+      const valueLabel = this.svgElement("text", {
+        x: String(point.x),
+        y: String(point.y - 12),
+        class: "graph-value-label",
+        "text-anchor": "middle",
+      });
+      valueLabel.textContent = String(point.task_count);
+      svg.appendChild(valueLabel);
+
+      const nameLabel = this.svgElement("text", {
+        x: String(point.x),
+        y: String(height - 34),
+        class: "graph-member-label",
+        "text-anchor": "middle",
+      });
+      nameLabel.textContent = this.truncateLabel(point.name);
+      svg.appendChild(nameLabel);
+    });
+
+    graph.appendChild(svg);
   }
 
-  private clearDropState(column: HTMLElement): void {
-    column.classList.remove("is-drag-over", "is-drop-blocked");
+  private readProjectStats(): ProjectTaskStat[] {
+    const dataElement = this.querySelector<HTMLScriptElement>("#dashboard-project-task-stats");
+
+    if (dataElement == null) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(dataElement.textContent ?? "[]");
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .map((item) => this.normalizeProjectStat(item))
+        .filter((item): item is ProjectTaskStat => item != null);
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   }
 
-  private getCsrfToken(): string {
-    return document.querySelector<HTMLMetaElement>("meta[name='csrf-token']")?.content ?? "";
+  private normalizeProjectStat(value: unknown): ProjectTaskStat | null {
+    if (typeof value !== "object" || value == null) {
+      return null;
+    }
+
+    const project = value as Record<string, unknown>;
+    const projectId = this.normalizeProjectId(project.project_id);
+    const members = Array.isArray(project.members) ? project.members : [];
+
+    if (projectId.length === 0) {
+      return null;
+    }
+
+    return {
+      project_id: projectId,
+      project_name: String(project.project_name ?? "Untitled project"),
+      total_tasks: Number(project.total_tasks ?? 0),
+      completed_tasks: Number(project.completed_tasks ?? 0),
+      members: members.map((member) => {
+        const row = member as Record<string, unknown>;
+
+        return {
+          name: String(row.name ?? "Unassigned"),
+          task_count: Number(row.task_count ?? 0),
+        };
+      }),
+    };
+  }
+
+  private normalizeProjectId(value: unknown): string {
+    return String(value ?? "").trim();
+  }
+
+  private svgElement(name: string, attributes: Record<string, string>): SVGElement {
+    const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+
+    Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+
+    return element;
+  }
+
+  private truncateLabel(value: string): string {
+    return value.length > 14 ? `${value.slice(0, 12)}...` : value;
   }
 }
