@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SubTaskController;
 use App\Http\Controllers\TaskController;
@@ -38,4 +39,7 @@ Route::middleware("auth")->group(function() {
     
     Route::get("/dashboard", [DashboardController::class, "index"])->name("dashboard");
     Route::get("/board", [BoardController::class, "index"])->name("board");
+    Route::get("/profile", [ProfileController::class, "show"])->name("profile.show");
+    Route::put("/profile", [ProfileController::class, "update"])->name("profile.update");
+    Route::put("/profile/password", [ProfileController::class, "updatePassword"])->name("profile.password.update");
 });
