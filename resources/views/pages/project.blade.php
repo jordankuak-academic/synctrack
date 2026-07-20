@@ -135,7 +135,7 @@
               @foreach ($allProjects as $project)
                 <div class="project-task-panel" data-project-id="{{ $project['id'] }}" data-project-title="{{ $project['title'] }}" data-project-description="{{ $project['description'] ?? '' }}" hidden>
                   <div class="task-list" data-task-list>
-                    @forelse ($project['tasks'] ?? [] as $task)
+                    @foreach ($project['tasks'] ?? [] as $task)
                       @php
                         $subTasks = $task['sub_tasks'] ?? [];
                         $taskStatus = ['draft' => 'assigned', 'in_progress' => 'in-progress', 'completed' => 'done'][$task['status'] ?? 'draft'] ?? 'assigned';
@@ -254,9 +254,7 @@
                         <span>+</span>
                         <span>Create SubTask</span>
                       </button>
-                    @empty
-                      <div class="task-empty"><p class="body-l">No task available.</p></div>
-                    @endforelse
+                    @endforeach
                   </div>
                 </div>
               @endforeach

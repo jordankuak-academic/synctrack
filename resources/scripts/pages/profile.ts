@@ -94,7 +94,7 @@ export default class ProfileController extends Controller {
     alert.dataset.notification = "";
     alert.setAttribute("role", "alert");
     alert.textContent = message;
-    this.querySelector(".profile-heading")?.insertAdjacentElement("afterend", alert);
+    this.querySelector(".profile-header")?.insertAdjacentElement("afterend", alert);
     window.setTimeout(() => this.dismissNotification(alert), 3000);
   }
 
@@ -102,18 +102,4 @@ export default class ProfileController extends Controller {
     notification.classList.add("is-leaving");
     window.setTimeout(() => notification.remove(), 200);
   }
-}
-
-const initializeProfile = (): void => {
-  const profileRoot = document.querySelector<HTMLElement>("#profile-wrapper");
-  if (profileRoot && !profileRoot.hasAttribute("data-controller-initialized")) {
-    profileRoot.setAttribute("data-controller-initialized", "true");
-    new ProfileController(profileRoot);
-  }
-};
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeProfile, { once: true });
-} else {
-  initializeProfile();
 }

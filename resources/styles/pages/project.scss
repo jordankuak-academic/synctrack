@@ -342,6 +342,9 @@
         padding: 24px;
         overflow-y: auto;
     }
+    .project-detail-panel[hidden] {
+        display: none;
+    }
     .detail-field {
         display: flex;
         flex-direction: column;

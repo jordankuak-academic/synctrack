@@ -1,5 +1,4 @@
-import Controller from "@/utils/Controller";
-
+import Controller from "@/utils/controller";
 type TaskStatus = "assigned" | "in-progress" | "done";
 type TaskPriority = "" | "Low" | "Medium" | "High";
 interface Task {
@@ -38,22 +37,16 @@ export default class Project extends Controller {
     private currentProject = -1;
     private editing = false;
     private editingParentTaskId: number | null = null;
+    private savingTask = false;
     private members: MemberItem[] = [];
     private projectDetailEditing = false;
-    private toastTimer: number | null = null;
     protected initialize(): void {
         queueMicrotask(() => {
-            this.mountToasts();
             this.registerEvents();
             this.loadProjects();
             this.restoreProjectGroups();
             this.restoreSelectedProject();
         });
-    }
-    private mountToasts(): void {
-        this.querySelectorAll<HTMLElement>(".project-toast").forEach(
-            (toast) => document.body.appendChild(toast),
-        );
     }
     private restoreSelectedProject(): void {
         const storedProjectId = sessionStorage.getItem(
@@ -176,6 +169,7 @@ export default class Project extends Controller {
                 html,
                 "text/html",
             );
+            this.showSharedToast(documentResult);
             if (this.refreshProjectMarkup(documentResult)) {
                 if (selectCreatedProject && this.projects.length > 0) {
                     this.selectProject(this.projects.length - 1);
@@ -417,6 +411,10 @@ export default class Project extends Controller {
         });
         document.addEventListener("change", (event) => {
             const target = event.target as HTMLInputElement | HTMLSelectElement;
+            if (target.id === "editing-task-name") {
+                void this.saveTask();
+                return;
+            }
             if (target.classList.contains("task-name-input")) {
                 this.updateTaskField(
                     Number(target.dataset.taskId),
@@ -452,6 +450,13 @@ export default class Project extends Controller {
                 return;
             }
         });
+        document.addEventListener("keydown", (event) => {
+            const target = event.target as HTMLInputElement;
+            if (target.id === "editing-task-name" && event.key === "Enter") {
+                event.preventDefault();
+                void this.saveTask();
+            }
+        });
     }
     private validateProject(): boolean {
         const name = this.querySelector<HTMLInputElement>("#project-name");
@@ -467,8 +472,10 @@ export default class Project extends Controller {
     }
     private async createProject(): Promise<void> {
         if (!this.validateProject()) {
-            this.showToast(false);
-            this.leaveCreateProject();
+            this.showClientToast(
+                "Create Project failed.Please try again.",
+                false,
+            );
             return;
         }
         const name = this.querySelector<HTMLInputElement>("#project-name")!;
@@ -799,10 +806,7 @@ export default class Project extends Controller {
             !name.value.trim() ||
             !description.value.trim()
         ) {
-            this.populateProjectDetail();
-            this.setProjectDetailEditing(false);
-            this.showState(this.STATE_PROJECT_DETAIL);
-            this.showNamedToast("#toast-project-update-error");
+            this.showClientToast("Change failed.Please try again.", false);
             return;
         }
         const previousName = project.name;
@@ -1087,6 +1091,19 @@ private renderTasks(): void {
             done: "done",
         };
         task.status = nextStatus[task.status];
+        if (isSubtask && task.parentTaskId != null) {
+            const parentTask = this.findTask(task.parentTaskId);
+            if (
+                parentTask &&
+                parentTask.subtasks.length > 0 &&
+                parentTask.subtasks.every(
+                    (subtask) => subtask.status === "done",
+                )
+            ) {
+                parentTask.status = "done";
+                this.persistTask(parentTask);
+            }
+        }
         const currentProject = this.projects[this.currentProject];
         if (
             currentProject?.tasks.length > 0 &&
@@ -1425,8 +1442,8 @@ private renderEditingRow(taskList: HTMLElement): void {
             priority?.value,
         );
     }
-private saveTask(): void {
-        if (this.currentProject === -1) {
+private async saveTask(): Promise<void> {
+        if (this.currentProject === -1 || this.savingTask) {
             return;
         }
         const name = this.querySelector<HTMLInputElement>("#editing-task-name");
@@ -1454,16 +1471,23 @@ private saveTask(): void {
             priority: priority.value.toLowerCase(),
             status: "draft",
         };
+        this.savingTask = true;
+        let saved = false;
         if (parentTask) {
-            this.submitRequest("/subtask", "POST", {
+            saved = await this.submitRequest("/subtask", "POST", {
                 ...fields,
                 task_id: parentTask.id.toString(),
             });
         } else {
-            this.submitRequest("/task", "POST", {
+            saved = await this.submitRequest("/task", "POST", {
                 ...fields,
                 project_id: this.projects[this.currentProject].id.toString(),
             });
+        }
+        this.savingTask = false;
+        if (saved) {
+            this.editing = false;
+            this.editingParentTaskId = null;
         }
     }
 private cancelTask(): void {
@@ -1528,23 +1552,51 @@ private showState(state: string): void {
         }
     }
 private showToast(success: boolean): void {
-        this.showNamedToast(success ? "#toast-success" : "#toast-error");
+        this.showClientToast(
+            success
+                ? "Project Created Successfully!"
+                : "Create Project failed.Please try again.",
+            success,
+        );
     }
     private showNamedToast(selector: string): void {
-        if (this.toastTimer !== null) {
-            window.clearTimeout(this.toastTimer);
+        const notifications: Record<string, [string, boolean]> = {
+            "#toast-project-update-success": ["Project Changed Successfully!", true],
+            "#toast-project-update-error": ["Change failed.Please try again.", false],
+            "#toast-project-delete": ["Project Deleted Successfully!", true],
+            "#toast-task-delete": ["Task Deleted Successfully!", true],
+            "#toast-member-add-success": ["Member Added Successfully!", true],
+            "#toast-member-add-error": ["Member Add Failed.Please try again.", false],
+            "#toast-member-delete": ["Member Deleted Successfully!", true],
+        };
+        const notification = notifications[selector];
+        if (notification) {
+            this.showClientToast(...notification);
         }
-        document
-            .querySelectorAll<HTMLElement>(".project-toast.show")
-            .forEach((visibleToast) => visibleToast.classList.remove("show"));
-        const toast = document.querySelector<HTMLElement>(selector);
-        if (!toast) {
+    }
+    private showClientToast(message: string, success: boolean): void {
+        document.querySelector<HTMLElement>(".toast-wrapper")?.remove();
+        const toast = document.createElement("div");
+        toast.className = `toast-wrapper ${success ? "is-success" : "is-error"}`;
+        toast.setAttribute("role", success ? "status" : "alert");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
+        const messageElement = document.createElement("span");
+        messageElement.className = "toast-message";
+        messageElement.textContent = message;
+        toast.appendChild(messageElement);
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 3000);
+    }
+    private showSharedToast(documentResult: Document): void {
+        const toast = documentResult.querySelector<HTMLElement>(".toast-wrapper");
+
+        if (toast == null) {
             return;
         }
-        toast.classList.add("show");
-        this.toastTimer = window.setTimeout(() => {
-            toast.classList.remove("show");
-            this.toastTimer = null;
-        }, 3000);
+
+        document.querySelector<HTMLElement>(".toast-wrapper")?.remove();
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 3000);
     }
 }
