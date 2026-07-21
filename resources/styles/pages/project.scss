@@ -1,4 +1,7 @@
 @use "../abstracts/variables" as *;
+
+$panel-shadow: 0 8px 24px rgba($neutral-900, 0.08);
+
 #project-wrapper {
     display: flex;
     flex-direction: column;
@@ -72,6 +75,7 @@
         border-radius: 12px;
         background: $base-white;
         border: 1px solid $neutral-100;
+        box-shadow: $panel-shadow;
         overflow: hidden;
     }
     .card-header {

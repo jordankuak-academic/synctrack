@@ -15,7 +15,7 @@
       ],
       [
         "label" => "Member Projects",
-        "value" => $summary["member_projects"],
+        "value" => $summary["joined_projects"],
         "meta" => "Shared or assigned to you",
         "icon" => "users",
         "tone" => "neutral",
@@ -31,94 +31,68 @@
       ],
       [
         "label" => "In Progress Projects",
-        "value" => $summary["in_progress_projects"],
+        "value" => $summary["progressed_projects"],
         "meta" => "Open Project page",
         "icon" => "activity",
         "tone" => "warning",
         "href" => route("project"),
-      ],
+      ]
     ];
   @endphp
-
+  
   <div id="dashboard-wrapper">
     <header class="page-header dashboard-header">
       <div>
         <h1 class="heading-02">Dashboard</h1>
       </div>
     </header>
-
-    <section class="dashboard-content" aria-label="Project analysis dashboard">
-      <section class="dashboard-summary-grid" aria-label="Project summaries">
+    
+    <div class="dashboard-content">
+      <div class="analysis-card-container">
         @foreach ($cards as $card)
-          @if ($card["href"])
-            <a class="dashboard-summary-card dashboard-summary-card--{{ $card["tone"] }}" href="{{ $card["href"] }}">
-          @else
-            <article class="dashboard-summary-card dashboard-summary-card--{{ $card["tone"] }}">
-          @endif
-              <span class="summary-icon" aria-hidden="true">
-                <x-dynamic-component :component="'lucide-' . $card['icon']" />
-              </span>
-              <span class="summary-label">{{ $card["label"] }}</span>
-              <strong class="summary-value">{{ $card["value"] }}</strong>
-              <span class="summary-meta">{{ $card["meta"] }}</span>
-          @if ($card["href"])
-            </a>
-          @else
-            </article>
-          @endif
+          <a class="analysis-card card-{{ $card["tone"] }}" href="{{ $card["href"] }}">
+            <div class="card-icon">
+              <x-dynamic-component :component="'lucide-'.$card['icon']" />
+            </div>
+            <span class="card-summary">{{ $card["label"] }}</span>
+            <strong class="card-value">{{ $card["value"] }}</strong>
+            <span class="card-meta">{{ $card["meta"] }}</span>
+          </a>
         @endforeach
-      </section>
-
-      <section class="dashboard-panel graph-panel" aria-labelledby="member-task-graph-title">
-        <div class="panel-heading graph-heading">
-          <div>
-            <h2 id="member-task-graph-title" class="heading-04">Member Task Count</h2>
-            <p class="body-s">Task and subtask assignments by member based on due date.</p>
+      </div>
+      
+      <div class="analysis-graph-panel-container">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2 class="heading-04">Project Task Tracker</h2>
+            <p class="body-s">Track member project contribution value</p>
           </div>
-
-          <div class="graph-controls" aria-label="Member task count filters">
-            <label class="graph-control-field" for="dashboard-project-select">
-              <span>Project</span>
-              <select id="dashboard-project-select" data-project-stat-select @disabled(empty($projectMemberTaskStats))>
-                @forelse ($projectMemberTaskStats as $project)
-                  <option value="{{ $project["project_id"] }}" data-members='@json($project["members"], JSON_HEX_APOS)'>{{ $project["project_name"] }}</option>
+          
+          <div class="panel-tool">
+            <div class="filter">
+              <label class="label-m" for="project-selector">Project</label>
+              <select id="project-selector">
+                @forelse ($analysis as $detail)
+                  <option value="{{ $detail["project_id"] }}">{{ $detail["project_name"] }}</option>
                 @empty
-                  <option>No project available</option>
+                  <option value="">No projects available</option>
                 @endforelse
               </select>
-            </label>
-
-            <label class="graph-control-field" for="dashboard-date-filter">
-              <span>Date Filter</span>
-              <select id="dashboard-date-filter" data-date-filter>
-                <option value="month" selected>This Month</option>
-                <option value="week">This Week</option>
-                <option value="today">Today</option>
-                <option value="range">Specific Range</option>
-              </select>
-            </label>
-
-
-            <label class="graph-control-field date-input-field" data-range-start-field hidden for="dashboard-start-date">
-              <span>Start Date</span>
-              <input id="dashboard-start-date" type="date" data-start-date>
-            </label>
-
-            <label class="graph-control-field date-input-field" data-range-end-field hidden for="dashboard-end-date">
-              <span>End Date</span>
-              <input id="dashboard-end-date" type="date" data-end-date>
-            </label>
+            </div>
           </div>
         </div>
-
-        <div class="graph-shell">
-          <div class="line-graph" data-member-task-graph role="img" aria-label="Member task count line graph"></div>
-          <p class="graph-empty" data-graph-empty hidden>No task data available for this project.</p>
+        
+        <div class="panel-content">
+          <div id="graph-container" aria-live="polite"></div>
+          <div class="graph-empty-state">
+            <x-dynamic-component class="graph-empty-icon" :component="'lucide-chart-bar-stacked'" />
+            <p class="graph-empty heading-01">No Data Available</p>
+          </div>
         </div>
-      </section>
-    </section>
-
-    <script id="dashboard-project-task-stats" type="application/json">@json($projectMemberTaskStats)</script>
+      </div>
+    </div>
+    
+    <script id="dashboard-analysis-data" type="application/json">@json($analysis)</script>
   </div>
 @endsection
 

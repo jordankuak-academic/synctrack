@@ -1,357 +1,247 @@
 @use "../abstracts/variables" as *;
 @use "../abstracts/mixins" as *;
 
-$panel-shadow: 0 8px 8px rgba(17, 19, 26, 0.08);
+$panel-shadow: 0 8px 24px rgba($neutral-900, 0.08);
 
 #dashboard-wrapper {
-  height: 100%;
-  max-height: 100%;
-  min-height: 0;
-  padding: 14px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 20px;
-  overflow: hidden;
-  color: $neutral-900;
-  font-family: $font-family;
-
+  grid-template-areas: "header" "content";
+  grid-template-rows: auto 1fr;
+  gap: 24px;
+  min-height: calc(100vh - 64px);
+  padding: 16px;
+  
   .dashboard-header {
-    flex-shrink: 0;
+    grid-area: header;
+    
+    h1 {
+      margin: 0;
+      color: $neutral-900;
+    }
   }
-
-  .dashboard-header p {
-    margin-top: 4px;
-    color: $neutral-500;
-  }
-
+  
   .dashboard-content {
-    min-height: 0;
+    grid-area: content;
     display: grid;
-    grid-auto-rows: max-content;
-    gap: 12px;
+    gap: 24px;
     align-content: start;
-    overflow: hidden;
+    min-height: 0;
   }
-
-  .dashboard-summary-grid,
-  .dashboard-overview-grid,
-  .status-summary-list,
-  .project-ratio-list {
+  
+  .analysis-card-container {
     display: grid;
-    gap: 12px;
-  }
-
-  .dashboard-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
   }
-
-  .dashboard-overview-grid {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  }
-
-  .dashboard-summary-card,
-  .dashboard-panel,
-  .status-summary-card,
-  .project-ratio-list > div {
+  
+  .analysis-card {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    grid-template-areas: "icon summary" "icon value" "icon meta";
+    gap: 4px 16px;
+    min-height: 132px;
+    padding: 20px;
     border: 1px solid $neutral-100;
     border-radius: 8px;
     background: $base-white;
     box-shadow: $panel-shadow;
-  }
-
-  .dashboard-summary-card {
-    min-height: 96px;
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 6px 12px;
-    align-items: center;
-    padding: 14px;
-    color: inherit;
     text-decoration: none;
+    transition: transform .2s ease, box-shadow .2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba($neutral-900, 0.12);
+      
+      .card-icon svg {
+        transform: scale(1.08) rotate(8deg);
+      }
+    }
+    
+    .card-icon {
+      grid-area: icon;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      background: $background-500;
+      
+      svg {
+        width: 24px;
+        height: 24px;
+        stroke-width: 2;
+        transform-origin: center;
+        transition: transform .2s ease;
+      }
+    }
+    
+    .card-summary {
+      grid-area: summary;
+      @include label-s;
+      color: $neutral-500;
+      text-transform: uppercase;
+    }
+    
+    .card-value {
+      grid-area: value;
+      @include heading-03;
+      color: $neutral-900;
+    }
+    
+    .card-meta {
+      grid-area: meta;
+      @include body-s;
+      color: $neutral-600;
+    }
+    
+    &.card-primary .card-icon {
+      background: $background-900;
+      color: $primary-700;
+    }
+    
+    &.card-neutral .card-icon {
+      background: $neutral-100;
+      color: $neutral-700;
+    }
+    
+    &.card-success .card-icon {
+      background: $success-background;
+      color: $success-700;
+    }
+    
+    &.card-warning .card-icon {
+      background: $warning-background;
+      color: $warning-700;
+    }
   }
-
-  a.dashboard-summary-card:hover,
-  .status-summary-card:hover {
-    border-color: $primary-300;
-  }
-
-  .summary-icon {
-    width: 38px;
-    height: 38px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    grid-row: 1 / span 3;
-    border-radius: 8px;
-    background: $background-500;
-    color: $primary-700;
-  }
-
-  .summary-icon svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .dashboard-summary-card--success .summary-icon {
-    background: $success-background;
-    color: $success-700;
-  }
-
-  .dashboard-summary-card--warning .summary-icon {
-    background: $warning-background;
-    color: $warning-700;
-  }
-
-  .dashboard-summary-card--neutral .summary-icon {
-    background: $background-100;
-    color: $neutral-700;
-  }
-
-  .summary-label,
-  .summary-meta,
-  .project-ratio-list span,
-  .status-summary-card span,
-  .graph-control-field span {
-    color: $neutral-500;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .summary-label {
-    text-transform: uppercase;
-  }
-
-  .summary-value {
-    color: $neutral-900;
-    font-size: 28px;
-    line-height: 1;
-  }
-
-  .dashboard-panel {
-    min-width: 0;
+  
+  .analysis-graph-panel-container {
+    --chart-progress: #{$primary-300};
+    --chart-completed: #{$success-300};
+    --chart-overdue: #{$danger-300};
+    --chart-total: #{$neutral-500};
+    --chart-text: #{$neutral-500};
+    --chart-grid: #{$neutral-100};
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
     min-height: 0;
-    padding: 14px;
+    padding: 24px;
+    border: 1px solid $neutral-100;
+    border-radius: 8px;
+    background: $base-white;
+    box-shadow: $panel-shadow;
+    overflow: hidden;
   }
-
-  .panel-heading,
-  .graph-heading {
+  
+  .panel-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 12px;
+    gap: 16px;
   }
-
-  .panel-heading h2 {
-    margin: 0;
+  
+  .panel-title {
+    h2 {
+      margin: 0 0 4px;
+      color: $neutral-900;
+    }
+    
+    p {
+      margin: 0;
+      color: $neutral-500;
+    }
   }
-
-  .panel-heading p {
-    margin-top: 4px;
-    color: $neutral-500;
+  
+  .panel-tool {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
   }
-
-  .panel-heading > strong {
-    min-width: 56px;
-    height: 42px;
+  
+  .filter {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: $background-500;
-    color: $primary-700;
-    font-size: 20px;
+    gap: 12px;
+    min-width: 280px;
+    
+    label,
+    span {
+      color: $neutral-700;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    
+    select {
+      @include body-s;
+      width: 220px;
+      height: 44px;
+      padding: 0 14px;
+      border: 1px solid $neutral-200;
+      border-radius: 8px;
+      background: $background-100;
+      color: $neutral-800;
+      outline: none;
+    }
   }
-
-  .project-ratio-list,
-  .status-summary-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .project-ratio-list > div,
-  .status-summary-card {
-    display: grid;
-    gap: 8px;
-    padding: 16px;
-    box-shadow: none;
-    text-decoration: none;
-  }
-
-  .project-ratio-list strong,
-  .status-summary-card strong {
-    color: $neutral-900;
-    font-size: 28px;
-    line-height: 1;
-  }
-
-  .status-summary-card--completed strong {
-    color: $success-700;
-  }
-
-  .status-summary-card--progress strong {
-    color: $primary-700;
-  }
-
-  .graph-panel {
-    display: grid;
-    grid-template-rows: auto auto;
-    align-content: start;
-    min-height: 0;
+  
+  .panel-content {
+    position: relative;
+    height: min(460px, calc(100vh - 320px));
+    min-height: 280px;
+    max-height: calc(100vh - 320px);
     overflow: hidden;
-  }
-
-  .graph-controls {
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
-    align-items: flex-end;
-  }
-
-  .graph-control-field[hidden] {
-    display: none;
-  }
-
-  .graph-control-field {
-    min-width: 0;
-    display: grid;
-    gap: 5px;
-  }
-
-  .graph-control-field select,
-  .graph-control-field input {
-    width: 100%;
-    min-height: 36px;
-    padding: 0 10px;
-    border: 1px solid $neutral-200;
-    border-radius: 8px;
-    background: $base-white;
-    color: $neutral-900;
-    font-family: $font-family;
-    box-sizing: border-box;
-  }
-
-  .graph-control-field select:disabled,
-  .graph-control-field input:disabled {
-    background: $neutral-100;
-    color: $neutral-400;
-  }
-
-  .graph-shell {
-    display: grid;
-    place-items: center;
     border: 1px solid $neutral-100;
     border-radius: 8px;
-    background: $background-100;
-    overflow: hidden;
+    background: linear-gradient(180deg, $background-100 0%, $base-white 100%);
   }
-
-  .line-graph {
-    width: 100%;
-    height: 100%;
-    max-height: 400px;
-    padding: 10px 12px;
-    box-sizing: border-box;
+  
+  #graph-container,
+  .graph-empty-state {
+    position: absolute;
+    inset: 0;
   }
-
-  .graph-shell.is-empty .line-graph {
-    display: none;
+  
+  #graph-container {
+    padding: 16px 20px 12px;
+    
+    &[hidden] {
+      display: none;
+    }
+    
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
   }
-
-  .graph-shell:not(.is-empty) .line-graph {
-    display: block;
-  }
-
-  .member-task-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
-  .graph-grid-line {
-    stroke: $neutral-100;
-    stroke-width: 1;
-  }
-
-  .graph-line {
-    fill: none;
-    stroke: $primary-500;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1;
-  }
-
-  .graph-point {
-    fill: $base-white;
-    stroke: $primary-100;
-    stroke-width: 1;
-  }
-
-  .graph-axis-label,
-  .graph-axis-title,
-  .graph-member-label,
-  .graph-value-label {
-    fill: $neutral-400;
-    font-family: $font-family;
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .graph-axis-title {
-    fill: $neutral-400;
-  }
-
-  .graph-value-label {
-    fill: $neutral-500;
-  }
-
-  .graph-empty {
+  
+  .graph-empty-state {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 18px;
+    padding: 32px;
+    text-align: center;
     color: $neutral-500;
-    font-size: 14px;
-    padding:16px;
-  }
-
-  .priority-badge.default,
-  .task-priority-select.default {
-    background-color: $neutral-200;
-    color: $neutral-700;
-  }
-
-  @media (max-width: 1180px) {
-    .dashboard-summary-grid,
-    .dashboard-overview-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .graph-heading {
-      display: grid;
-    }
-
-    .graph-controls {
-      width: 100%;
+    
+    &[hidden] {
+      display: none;
     }
   }
-
-  @media (max-width: 760px) {
-    .dashboard-summary-grid,
-    .dashboard-overview-grid,
-    .project-ratio-list,
-    .status-summary-list,
-    .graph-controls {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-content {
-      overflow: auto;
-    }
-
-    .graph-shell {
-      height: 260px;
-      max-height: 260px;
-    }
+  
+  .graph-empty-icon {
+    width: 72px;
+    height: 72px;
+    padding: 18px;
+    border: 1px solid $neutral-100;
+    border-radius: 8px;
+    background: rgba($base-white, 0.76);
+    color: $neutral-300;
+  }
+  
+  .graph-empty {
+    margin: 0;
+    color: $neutral-600;
   }
 }
-
-
-
-
-

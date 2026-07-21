@@ -4,146 +4,185 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller {
     public function index(): View {
-        $currentUser = Auth::user();
-
-        $projectQuery = Project::with([
-            "creator",
-            "members.user",
-            "tasks.assignee",
-            "tasks.subTasks.assignee",
-        ]);
-
-        if (!$this->userIsAdmin($currentUser)) {
-            $projectQuery->where(function($query) use ($currentUser) {
-                $query->where("creator_id", $currentUser->id)
-                    ->orWhereHas("members", fn($query) => $query->where("user_id", $currentUser->id))
-                    ->orWhereHas("tasks", fn($query) => $query->where("assignee_id", $currentUser->id))
-                    ->orWhereHas("tasks.subTasks", fn($query) => $query->where("assignee_id", $currentUser->id));
-            });
-        }
-
-        $projects = $projectQuery->get();
-
-        $summary = $this->buildProjectSummary($projects, $currentUser->id);
-        $projectMemberTaskStats = $this->buildProjectMemberTaskStats($projects);
-
-        return view("pages.dashboard", compact("summary", "projectMemberTaskStats"));
+        $summary = $this->getDashboardSummary();
+        $analysis = $this->getProjectAnalysis();
+        
+        return view("pages.dashboard", compact("summary", "analysis"));
     }
-
-    private function buildProjectSummary(Collection $projects, int $currentUserId): array {
-        $ownedProjects = $projects->where("creator_id", $currentUserId)->count();
-        $memberProjects = $projects->where("creator_id", "!=", $currentUserId)->count();
-        $completedProjects = $projects->filter(fn($project) => $this->isProjectCompleted($project))->count();
-        $inProgressProjects = max($projects->count() - $completedProjects, 0);
-
-        return [
-            "total_projects" => $projects->count(),
-            "owned_projects" => $ownedProjects,
-            "member_projects" => $memberProjects,
-            "completed_projects" => $completedProjects,
-            "in_progress_projects" => $inProgressProjects,
-        ];
-    }
-
-    private function buildProjectMemberTaskStats(Collection $projects): array {
-        return $projects
-            ->map(function($project) {
-                $subTasks = $project->tasks->flatMap(fn($task) => $task->subTasks);
-                $parentTasks = $project->tasks->filter(fn($task) => $task->subTasks->isEmpty());
-                $members = collect([
-                    [
-                        "id" => $project->creator?->id,
-                        "name" => $project->creator?->username ?? "Owner",
-                    ],
-                ])
-                    ->merge($project->members
-                        ->filter(fn($member) => $member->user !== null)
-                        ->map(fn($member) => [
-                            "id" => $member->user_id,
-                            "name" => $member->user->username,
-                        ]))
-                    ->merge($parentTasks
-                        ->filter(fn($task) => $task->assignee !== null)
-                        ->map(fn($task) => [
-                            "id" => $task->assignee_id,
-                            "name" => $task->assignee->username,
-                        ]))
-                    ->merge($subTasks
-                        ->filter(fn($subTask) => $subTask->assignee !== null)
-                        ->map(fn($subTask) => [
-                            "id" => $subTask->assignee_id,
-                            "name" => $subTask->assignee->username,
-                        ]))
-                    ->filter(fn($member) => $member["id"] !== null)
-                    ->unique("id")
-                    ->values();
-
-                $memberStats = $members->map(function($member) use ($parentTasks, $subTasks) {
-                    $tasks = $parentTasks
-                        ->filter(fn($task) => (int) $task->assignee_id === (int) $member["id"] && $task->assignee !== null)
-                        ->toBase()
-                        ->map(fn($task) => $this->formatDashboardTask($task, "task"))
-                        ->merge($subTasks
-                            ->filter(fn($subTask) => (int) $subTask->assignee_id === (int) $member["id"] && $subTask->assignee !== null)
-                            ->toBase()
-                            ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
-                        ->values();
-
-                    return [
-                        "member_id" => $member["id"],
-                        "name" => $member["name"],
-                        "task_count" => $tasks->count(),
-                        "tasks" => $tasks->all(),
-                    ];
-                });
-
-                $unassignedTasks = $parentTasks
-                    ->filter(fn($task) => $task->assignee_id === null || $task->assignee === null)
-                    ->toBase()
-                    ->map(fn($task) => $this->formatDashboardTask($task, "task"))
-                    ->merge($subTasks
-                        ->filter(fn($subTask) => $subTask->assignee_id === null || $subTask->assignee === null)
-                        ->toBase()
-                        ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
-                    ->values();
-
-                if ($unassignedTasks->isNotEmpty()) {
-                    $memberStats->push([
-                        "member_id" => null,
-                        "name" => "Unassigned",
-                        "task_count" => $unassignedTasks->count(),
-                        "tasks" => $unassignedTasks->all(),
-                    ]);
-                }
-
-                return [
-                    "project_id" => $project->id,
-                    "project_name" => $project->title,
-                    "total_tasks" => $parentTasks->count() + $subTasks->count(),
-                    "completed_tasks" => $parentTasks->where("status", "completed")->count() + $subTasks->where("status", "completed")->count(),
-                    "members" => $memberStats->values()->all(),
-                ];
+    
+    private function getDashboardSummary(): array {
+        $current_user = Auth::user();
+        
+        $owned_projects = Project::where("creator_id", $current_user->id)->count();
+        $joined_projects = Project::with("members")
+            ->where("creator_id", "!=", $current_user->id)
+            ->whereHas("members", function ($query) use ($current_user) {
+                $query->where("user_id", $current_user->id);
             })
-            ->values()
-            ->all();
-    }
-
-    private function formatDashboardTask($task, string $type): array {
+            ->count();
+        $completed_projects = Project::where(function ($query) use ($current_user) {
+            $query->where("creator_id", $current_user->id)
+                ->orWhereHas("members", function ($query) use ($current_user) {
+                    $query->where("user_id", $current_user->id);
+                });
+        })
+        ->with(["tasks.subTasks"])
+        ->withCount(["tasks" => function ($query) {
+            $query->withCount("subTasks");
+        }])
+        ->get()
+        ->filter(function ($project) {
+            foreach ($project->tasks as $task) {
+                $is_completed = false;
+                
+                if ($task->subTasks->count() > 0) {
+                    $completed_subtasks = $task->subTasks->where("status", "completed")->count();
+                    $is_completed = $completed_subtasks == $task->subTasks->count();
+                } else {
+                    $is_completed = $task->status == "completed";
+                }
+                
+                return $is_completed;
+            }
+        })
+        ->count();
+        $progressed_projects = Project::where(function ($query) use ($current_user) {
+            $query->where("creator_id", $current_user->id)
+                ->orWhereHas("members", function ($query) use ($current_user) {
+                    $query->where("user_id", $current_user->id);
+                });
+        })
+        ->with(["tasks.subTasks"])
+        ->withCount(["tasks" => function ($query) {
+            $query->withCount("subTasks");
+        }])
+        ->get()
+        ->filter(function ($project) {
+            if ($project->tasks->count() == 0) {
+                return true;
+            }
+            
+            foreach ($project->tasks as $task) {
+                $is_completed = false;
+                
+                if ($task->subTasks->count() > 0) {
+                    $completed_subtasks = $task->subTasks->where("status", "completed")->count();
+                    $is_completed = $completed_subtasks == $task->subTasks->count();
+                } else {
+                    $is_completed = $task->status == "completed";
+                }
+                
+                return !$is_completed;
+            }
+        })
+        ->count();
+            
         return [
-            "task_id" => $task->id,
-            "task_type" => $type,
-            "date" => $task->created_at?->toDateString(),
+            "owned_projects" => $owned_projects,
+            "joined_projects" => $joined_projects,
+            "completed_projects" => $completed_projects,
+            "progressed_projects" => $progressed_projects,
         ];
     }
-
-    private function isProjectCompleted($project): bool {
-        return $project->tasks->isNotEmpty()
-            && $project->tasks->every(fn($task) => $task->status === "completed" && $task->subTasks->every(fn($subTask) => $subTask->status === "completed"));
+    
+    private function getProjectAnalysis(): array {
+        $current_user = Auth::user();
+        $owned_projects = Project::with([
+            "members.user", 
+            "tasks" => function ($query) {
+                $query->with([
+                    "assignee",
+                    "subTasks.assignee"
+                ]);
+            }
+        ])->where("creator_id", $current_user->id)->get();
+        
+        $result = [];
+        
+        foreach ($owned_projects as $project) {
+            $assignments = [];
+            
+            foreach ($project->tasks as $task) {
+                $has_subtasks = $task->subTasks->isNotEmpty();
+                
+                if (!$has_subtasks && $task->assignee_id) {
+                    $key = $task->assignee->id;
+                    if (!isset($assignments[$key])) {
+                        $assignments[$key] = [
+                            "user" => $task->assignee,
+                            "tasks" => [],
+                        ];
+                    }
+                    $assignments[$key]["tasks"][] = $task;
+                }
+                
+                foreach ($task->subTasks as $subtask) {
+                    if ($subtask->assignee_id) {
+                        $key = $subtask->assignee->id;
+                        if (!isset($assignments[$key])) {
+                            $assignments[$key] = [
+                                "user" => $subtask->assignee,
+                                "tasks" => [],
+                            ];
+                        }
+                        $assignments[$key]["tasks"][] = $subtask;
+                    }
+                }
+            }
+            
+            foreach ($project->members as $member) {
+                if (!isset($assignments[$member->user_id])) {
+                    $assignments[$member->user_id] = [
+                        "user" => $member->user,
+                        "tasks" => [],
+                    ];
+                }
+            }
+            
+            $member_data = [];
+            
+            foreach ($assignments as $data) {
+                $statistics = [
+                    "total_count" => 0,
+                    "pending" => 0,
+                    "completed" => 0,
+                    "overdue" => 0
+                ];
+                
+                foreach ($data["tasks"] as $item) {
+                    $statistics["total_count"]++;
+                    
+                    $status = $item->status ?? "in_progress";
+                    $is_overdue = false;
+                    
+                    if ($item->due_date && $status != "completed") {
+                        $is_overdue = now()->gt($item->due_date);
+                    }
+                    
+                    if ($status == "completed") {
+                        $statistics["completed"]++;
+                    } elseif ($status != "completed" && $is_overdue) {
+                        $statistics["overdue"]++;
+                    } else {
+                        $statistics["pending"]++;
+                    }
+                }
+                
+                $member_name = $data["user"]->username ?? "Unknown";
+                $member_data[$member_name] = $statistics;
+            }
+            
+            $result[] = [
+                "project_id" => $project->id,
+                "project_name" => $project->title,
+                "members" => $member_data,
+            ];
+        }
+        return $result;
     }
 }
 
