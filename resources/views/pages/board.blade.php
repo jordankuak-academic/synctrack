@@ -30,7 +30,7 @@
     <section class="board-content">
       <header class="page-header board-header">
         <div>
-          <h1 class="heading-01">Task Board</h1>
+          <h1 class="heading-02">Task Board</h1>
         </div>
         
         <div class="task-view-switcher" aria-label="Task view selector">

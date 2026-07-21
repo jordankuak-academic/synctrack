@@ -12,7 +12,7 @@
   
   <div id="project-wrapper" data-current-user-id="{{ auth()->id() }}">
     <header class="page-header project-header">
-      <h1 class="heading-01">Project List</h1>
+      <h1 class="heading-02">Project List</h1>
       
       <div id="header-default-actions" class="header-actions active">
         <button id="create-project-btn" class="btn primary-btn">Create Project</button>
@@ -42,7 +42,7 @@
             <div class="project-status-group expanded">
               <button type="button" class="project-status-heading" data-project-group="on-progress" aria-expanded="true">
                 <span class="status-chevron" aria-hidden="true"></span>
-                <span class="body-l">On Progress</span>
+                <span class="body-s">On Progress</span>
                 <span id="on-progress-count" class="status-count helper-text">{{ $onProgressProjects->count() }}</span>
               </button>
               <div id="on-progress-projects" class="status-project-list">
@@ -61,7 +61,7 @@
             <div class="project-status-group">
               <button type="button" class="project-status-heading" data-project-group="completed" aria-expanded="false">
                 <span class="status-chevron" aria-hidden="true"></span>
-                <span class="body-l">Completed</span>
+                <span class="body-s">Completed</span>
                 <span id="completed-count" class="status-count helper-text">{{ $completedProjects->count() }}</span>
               </button>
               <div id="completed-projects" class="status-project-list">
