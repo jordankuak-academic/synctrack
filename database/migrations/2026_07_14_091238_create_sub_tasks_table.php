@@ -8,8 +8,8 @@ return new class extends Migration {
     public function up(): void {
         Schema::create("sub_tasks", function (Blueprint $table) {
             $table->id();
-            $table->foreignId("task_id")->constrained("tasks")->onDelete("cascade");
-            $table->foreignId("assignee_id")->nullable()->constrained("users")->nullOnDelete();
+            $table->foreignId("task_id")->constrained("tasks");
+            $table->foreignId("assignee_id")->nullable()->constrained("users");
             $table->string("title");
             $table->date("due_date")->nullable();
             $table->enum("priority", ["low", "medium", "high"])->default("medium")->nullable();

@@ -10,26 +10,26 @@
     $projectCount = $completedProjects->count() + $onProgressProjects->count();
   @endphp
   
-  <div id="project-wrapper">
-    <div class="project-header">
-      <h1 class="heading-01">Project List</h1>
+  <div id="project-wrapper" data-current-user-id="{{ auth()->id() }}">
+    <header class="page-header project-header">
+      <h1 class="heading-02">Project List</h1>
       
       <div id="header-default-actions" class="header-actions active">
-        <button id="create-project-btn" class="btn btn-primary">Create Project</button>
+        <button id="create-project-btn" class="btn primary-btn">Create Project</button>
       </div>
       <div id="header-create-actions" class="header-actions">
-        <button id="cancel-project-btn" class="btn btn-secondary">Cancel</button>
-        <button id="save-project-btn" class="btn btn-primary">Create</button>
+        <button id="cancel-project-btn" class="btn secondary-btn">Cancel</button>
+        <button id="save-project-btn" class="btn primary-btn">Create</button>
       </div>
       <div id="header-project-detail-actions" class="header-actions">
-        <button id="delete-project-btn" class="btn btn-danger">Delete</button>
-        <button id="edit-project-btn" class="btn btn-primary">Edit</button>
+        <button id="delete-project-btn" class="btn danger-btn">Void</button>
+        <button id="edit-project-btn" class="btn primary-btn">Edit</button>
       </div>
       <div id="header-project-edit-actions" class="header-actions">
-        <button id="cancel-project-edit-btn" class="btn btn-secondary">Cancel</button>
-        <button id="save-project-edit-btn" class="btn btn-primary">Save</button>
+        <button id="cancel-project-edit-btn" class="btn secondary-btn">Cancel</button>
+        <button id="save-project-edit-btn" class="btn primary-btn">Save</button>
       </div>
-    </div>
+    </header>
     <div class="project-body">
       <aside class="project-list-card">
         <div class="card-header">
@@ -42,13 +42,13 @@
             <div class="project-status-group expanded">
               <button type="button" class="project-status-heading" data-project-group="on-progress" aria-expanded="true">
                 <span class="status-chevron" aria-hidden="true"></span>
-                <span class="body-l">On Progress</span>
+                <span class="body-s">On Progress</span>
                 <span id="on-progress-count" class="status-count helper-text">{{ $onProgressProjects->count() }}</span>
               </button>
               <div id="on-progress-projects" class="status-project-list">
                 @forelse ($onProgressProjects as $project)
                   <button type="button" class="project-item" data-index="{{ $completedProjects->count() + $loop->index }}" data-project-id="{{ $project['id'] }}">
-                    <span class="project-name body-s">{{ $project['title'] }}</span>
+                    <span class="project-name body-s">{{ $project['title'] }}</span><span class="project-owner-label">{{ $project['ownership_label'] ?? (($project['creator_id'] ?? null) === auth()->id() ? 'Your Project' : 'Member Project') }}</span>
                   </button>
                 @empty
                   <span class="project-group-empty helper-text">No project available.</span>
@@ -61,13 +61,13 @@
             <div class="project-status-group">
               <button type="button" class="project-status-heading" data-project-group="completed" aria-expanded="false">
                 <span class="status-chevron" aria-hidden="true"></span>
-                <span class="body-l">Completed</span>
+                <span class="body-s">Completed</span>
                 <span id="completed-count" class="status-count helper-text">{{ $completedProjects->count() }}</span>
               </button>
               <div id="completed-projects" class="status-project-list">
                 @forelse ($completedProjects as $project)
                   <button type="button" class="project-item" data-index="{{ $loop->index }}" data-project-id="{{ $project['id'] }}">
-                    <span class="project-name body-s">{{ $project['title'] }}</span>
+                    <span class="project-name body-s">{{ $project['title'] }}</span><span class="project-owner-label">{{ $project['ownership_label'] ?? (($project['creator_id'] ?? null) === auth()->id() ? 'Your Project' : 'Member Project') }}</span>
                   </button>
                 @empty
                   <span class="project-group-empty helper-text">No completed project.</span>
@@ -128,19 +128,22 @@
               <div class="assigned-column helper-text">Assigned</div>
               <div class="date-column helper-text">Due Date</div>
               <div class="priority-column helper-text">Priority</div>
-              <div class="action-column helper-text">Action</div>
+              <div class="action-column helper-text"></div>
             </div>
             
             <div id="project-task-panels">
               @foreach ($allProjects as $project)
-                <div class="project-task-panel" data-project-id="{{ $project['id'] }}" data-project-title="{{ $project['title'] }}" data-project-description="{{ $project['description'] ?? '' }}" hidden>
+                <div class="project-task-panel" data-project-id="{{ $project['id'] }}" data-project-title="{{ $project['title'] }}" data-project-description="{{ $project['description'] ?? '' }}" data-can-manage="{{ !empty($project['can_manage']) ? 'true' : 'false' }}" data-ownership-label="{{ $project['ownership_label'] ?? (($project['creator_id'] ?? null) === auth()->id() ? 'Your Project' : 'Member Project') }}" hidden>
+                  @php
+                    $canManageProject = !empty($project['can_manage']);
+                  @endphp
                   <div class="task-list" data-task-list>
                     @forelse ($project['tasks'] ?? [] as $task)
                       @php
                         $subTasks = $task['sub_tasks'] ?? [];
                         $taskStatus = ['draft' => 'assigned', 'in_progress' => 'in-progress', 'completed' => 'done'][$task['status'] ?? 'draft'] ?? 'assigned';
                         $taskStatusLabel = ['assigned' => 'Draft', 'in-progress' => 'In Progress', 'done' => 'Completed'][$taskStatus];
-                        $taskPriority = ucfirst($task['priority'] ?? '');
+                        $taskPriority = ucfirst($task['priority'] ?? 'low');
                         $assignee = collect($project['members'] ?? [])->firstWhere('id', $task['assignee_id'] ?? null);
                         $completedSubTasks = collect($subTasks)->where('status', 'completed')->count();
                       @endphp
@@ -160,26 +163,25 @@
                         </div>
                         
                         <div class="task-name-column body-s">
-                          <input class="task-inline-input task-name-input" type="text" maxlength="100" value="{{ $task['title'] }}" placeholder="Task Name" data-task-id="{{ $task['id'] }}" aria-label="Edit task name">
+                          <input class="task-inline-input task-name-input" type="text" maxlength="100" value="{{ $task['title'] }}" placeholder="Task Name" data-task-id="{{ $task['id'] }}" aria-label="Edit task name" @readonly(!$canManageProject)>
                           @if (count($subTasks) > 0)
                             <span class="subtask-count">{{ $completedSubTasks }}/{{ count($subTasks) }}</span>
                           @endif
                         </div>
                         
                         <div class="assigned-column helper-text">
-                          <button type="button" class="member-picker" data-task-id="{{ $task['id'] }}" data-member-id="{{ $task['assignee_id'] ?? '' }}" data-value="{{ $assignee['username'] ?? '' }}">{{ count($subTasks) > 0 ? '...' : ($assignee['username'] ?? 'Member') }}</button>
+                          <button type="button" class="member-picker" data-task-id="{{ $task['id'] }}" data-member-id="{{ $task['assignee_id'] ?? '' }}" data-value="{{ $assignee['username'] ?? '' }}" @disabled(!$canManageProject || count($subTasks) > 0)>{{ count($subTasks) > 0 ? '...' : ($assignee['username'] ?? 'Member') }}</button>
                         </div>
                         
                         <div class="date-column helper-text">
-                          <input class="task-inline-input task-date-input{{ !empty($task['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($task['due_date']) ? substr($task['due_date'], 0, 10) : '' }}" data-task-id="{{ $task['id'] }}" aria-label="Edit due date for {{ $task['title'] }}">
+                          <input class="task-inline-input task-date-input{{ !empty($task['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($task['due_date']) ? substr($task['due_date'], 0, 10) : '' }}" data-task-id="{{ $task['id'] }}" aria-label="Edit due date for {{ $task['title'] }}" @disabled(!$canManageProject)>
                         </div>
                         
                         <div class="priority-column">
                           @if (count($subTasks) > 0)
                             <span class="main-task-summary">...</span>
                           @else
-                            <select class="task-priority-select {{ $taskPriority ? strtolower($taskPriority) : 'default' }}" data-task-id="{{ $task['id'] }}" aria-label="Priority for {{ $task['title'] }}">
-                              <option value="" @selected($taskPriority === '')>Priority</option>
+                            <select class="task-priority-select {{ strtolower($taskPriority ?: 'Low') }}" data-task-id="{{ $task['id'] }}" aria-label="Priority for {{ $task['title'] }}" @disabled(!$canManageProject)>
                               @foreach (['Low', 'Medium', 'High'] as $priority)
                                 <option value="{{ $priority }}" @selected($taskPriority === $priority)>{{ $priority }}</option>
                               @endforeach
@@ -188,11 +190,13 @@
                         </div>
                         
                         <div class="action-column">
+                          @if ($canManageProject)
                           <button type="button" class="task-delete" data-task-id="{{ $task['id'] }}" aria-label="Delete {{ $task['title'] }}">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                               <path d="M3 6h18M9 6V4h6v2m-8 0 1 14h8l1-14M10 10v6m4-6v6" />
                             </svg>
                           </button>
+                          @endif
                         </div>
                       </div>
                       
@@ -219,20 +223,20 @@
                           </div>
                           
                           <div class="task-name-column body-s">
-                            <input class="task-inline-input task-name-input" type="text" maxlength="100" value="{{ $subTask['title'] }}" placeholder="Task Name" data-task-id="{{ $subTask['id'] }}" aria-label="Edit task name">
+                            <input class="task-inline-input task-name-input" type="text" maxlength="100" value="{{ $subTask['title'] }}" placeholder="Task Name" data-task-id="{{ $subTask['id'] }}" aria-label="Edit task name" @readonly(!$canManageProject)>
                           </div>
                           
                           <div class="assigned-column helper-text">
-                            <button type="button" class="member-picker" data-task-id="{{ $subTask['id'] }}" data-member-id="{{ $subTask['assignee_id'] ?? '' }}" data-value="{{ $subTaskAssignee['username'] ?? '' }}">{{ $subTaskAssignee['username'] ?? 'Member' }}</button>
+                            <button type="button" class="member-picker" data-task-id="{{ $subTask['id'] }}" data-member-id="{{ $subTask['assignee_id'] ?? '' }}" data-value="{{ $subTaskAssignee['username'] ?? '' }}" @disabled(!$canManageProject)>{{ $subTaskAssignee['username'] ?? 'Member' }}</button>
                           </div>
                           
                           <div class="date-column helper-text">
-                            <input class="task-inline-input task-date-input{{ !empty($subTask['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($subTask['due_date']) ? substr($subTask['due_date'], 0, 10) : '' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Edit due date for {{ $subTask['title'] }}">
+                            <input class="task-inline-input task-date-input{{ !empty($subTask['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($subTask['due_date']) ? substr($subTask['due_date'], 0, 10) : '' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Edit due date for {{ $subTask['title'] }}" @disabled(!$canManageProject)>
                           </div>
                           
                           <div class="priority-column">
-                            <select class="task-priority-select {{ $subTaskPriority ? strtolower($subTaskPriority) : 'default' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Priority for {{ $subTask['title'] }}">
-                              <option value="" @selected($subTaskPriority === '')>Priority</option>
+                            <select class="task-priority-select {{ $subTaskPriority ? strtolower($subTaskPriority) : 'default' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Priority for {{ $subTask['title'] }}" @disabled(!$canManageProject)>
+                              <option value="" @selected($subTaskPriority === '')>None</option>
                               @foreach (['Low', 'Medium', 'High'] as $priority)
                                 <option value="{{ $priority }}" @selected($subTaskPriority === $priority)>{{ $priority }}</option>
                               @endforeach
@@ -240,29 +244,34 @@
                           </div>
                           
                           <div class="action-column">
+                            @if ($canManageProject)
                             <button type="button" class="task-delete" data-task-id="{{ $subTask['id'] }}" aria-label="Delete {{ $subTask['title'] }}">
                               <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M3 6h18M9 6V4h6v2m-8 0 1 14h8l1-14M10 10v6m4-6v6" />
                               </svg>
                             </button>
+                            @endif
                           </div>
                         </div>
                       @endforeach
                       
+                      @if ($canManageProject)
                       <button type="button" class="create-subtask-btn hover-subtask-btn"
                         data-parent-task-id="{{ $task['id'] }}">
                         <span>+</span>
                         <span>Create SubTask</span>
                       </button>
+                      @endif
                     @empty
-                      <div class="task-empty"><p class="body-l">No task available.</p></div>
+                      @if (!$canManageProject)
+                        <div class="task-empty"><p class="body-l">No task available.</p></div>
+                      @endif
                     @endforelse
                   </div>
                 </div>
               @endforeach
             </div>
-            
-            <button type="button" id="create-task-btn" class="create-task-button">
+            <button type="button" id="create-task-btn" class="create-task-button" hidden>
               <span>+</span>
               <span class="body-s">Create Task</span>
             </button>
@@ -279,7 +288,7 @@
           
           <div id="project-detail-panels">
             @foreach ($allProjects as $project)
-              <div class="project-detail-body project-detail-panel" data-project-id="{{ $project['id'] }}" hidden>
+              <div class="project-detail-body project-detail-panel" data-project-id="{{ $project['id'] }}" data-can-manage="{{ !empty($project['can_manage']) ? 'true' : 'false' }}" data-ownership-label="{{ $project['ownership_label'] ?? (($project['creator_id'] ?? null) === auth()->id() ? 'Your Project' : 'Member Project') }}" hidden>
                 <div class="detail-field">
                   <label class="label-m" for="detail-project-name-{{ $project['id'] }}">Project Name</label>
                   <input id="detail-project-name-{{ $project['id'] }}" data-detail-project-name type="text" maxlength="100" value="{{ $project['title'] }}" disabled>
@@ -308,7 +317,7 @@
                         <span>{{ $member['role'] ?? (($member['is_owner'] ?? false) ? 'Owner' : 'Member') }}</span>
                         <span>{{ $member['email'] }}</span>
                         
-                        @if (!empty($member['membership_id']))
+                        @if (!empty($member['membership_id']) && !empty($project['can_manage']))
                           <button type="button" class="detail-member-delete" data-membership-id="{{ $member['membership_id'] }}" aria-label="Delete {{ $member['username'] }}">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                               <path d="M3 6h18M9 6V4h6v2m-8 0 1 14h8l1-14M10 10v6m4-6v6" />
@@ -321,76 +330,19 @@
                     @endforelse
                   </div>
                   
+                  @if (!empty($project['can_manage']))
                   <button type="button" class="detail-add-member body-s">
                     <span aria-hidden="true">+</span>
                     <span>Add Other Member</span>
                   </button>
+                  @endif
                 </section>
               </div>
             @endforeach
-          </div>
-        </div>
-        
-        <div id="toast-success" class="project-toast success">
-          <span class="toast-icon">✓</span>
-          
-          <div class="toast-content">
-            <div class="toast-title label-m">Success</div>
-            <div class="toast-message helper-text">Create project successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-error" class="project-toast error">
-          <span class="toast-icon">✕</span>
-          
-          <div class="toast-content">
-            <div class="toast-title label-m">Failed</div>
-            <div class="toast-message helper-text">Create project failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-task-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete task successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-update-success" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Update project detail successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-update-error" class="project-toast error">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Update project detail failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-project-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete project successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-add-success" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Add member successfully.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-add-error" class="project-toast error">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Add member failed. Please try again.</div>
-          </div>
-        </div>
-        
-        <div id="toast-member-delete" class="project-toast success">
-          <div class="toast-content">
-            <div class="toast-message helper-text">Delete member successfully.</div>
           </div>
         </div>
       </section>
     </div>
   </div>
 @endsection
+

@@ -1,11 +1,13 @@
 @use "../abstracts/variables" as *;
+
+$panel-shadow: 0 8px 24px rgba($neutral-900, 0.08);
+
 #project-wrapper {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
     padding: 16px;
-    background: $background;
     overflow: hidden;
     box-sizing: border-box;
     .project-header {
@@ -37,26 +39,26 @@
         cursor: pointer;
         transition: 0.2s;
     }
-    .btn-primary {
-        background: $button-primary;
-        color: #fff;
+    .primary-btn {
+        background: $primary-500;
+        color: $base-white;
     }
-    .btn-primary:hover {
-        background: #4058e8;
+    .primary-btn:hover {
+        background: $primary-700;
     }
-    .btn-secondary {
-        background: #e9edf7;
-        color: #11131a;
+    .secondary-btn {
+        background: $neutral-400;
+        color: $base-white;
     }
-    .btn-secondary:hover {
-        background: #dde5f2;
+    .secondary-btn:hover {
+        background: $neutral-500;
     }
-    .btn-danger {
-        background: $danger-light;
-        color: #fff;
+    .danger-btn {
+        background: $danger-500;
+        color: $base-white;
     }
-    .btn-danger:hover {
-        background: #ef5c5c;
+    .danger-btn:hover {
+        background: $danger-700;
     }
     .project-body {
         display: grid;
@@ -71,8 +73,9 @@
         flex-direction: column;
         min-height: 0;
         border-radius: 12px;
-        background: #fff;
-        border: 1px solid $border-color;
+        background: $base-white;
+        border: 1px solid $neutral-100;
+        box-shadow: $panel-shadow;
         overflow: hidden;
     }
     .card-header {
@@ -85,7 +88,7 @@
     }
     #task-project-title {
         margin: 0;
-        font-family: Inter, sans-serif;
+        font-family: $font-family;
         font-size: 20px;
         line-height: 1.4;
     }
@@ -99,15 +102,15 @@
         border: none;
         border-radius: 0;
         background: transparent;
-        color: #596174;
+        color: $neutral-400;
         cursor: pointer;
     }
     .task-settings-button:hover {
         background: transparent;
-        color: #11131a;
+        color: $neutral-700;
     }
     .task-settings-button:focus-visible {
-        outline: 2px solid #4d66f4;
+        outline: 2px solid $primary-500;
         outline-offset: 2px;
     }
     .task-settings-button svg {
@@ -128,7 +131,7 @@
         padding: 0;
         border: 0;
         background: transparent;
-        color: #9ea3b8;
+        color: $neutral-400;
         cursor: pointer;
     }
     .detail-back-button svg {
@@ -167,9 +170,9 @@
         align-items: center;
         width: 34px;
         height: 34px;
-        border: 1px solid $border-color;
+        border: 1px solid $neutral-100;
         border-radius: 8px;
-        background: #fff;
+        background: $base-white;
     }
     .project-empty {
         display: none;
@@ -181,16 +184,26 @@
     .project-empty.active {
         display: flex;
     }
+    .project-empty.has-projects {
+        min-height: 0;
+        overflow: hidden;
+    }
     .project-status-group {
         width: 100%;
+        min-height: 0;
     }
-    .project-empty.has-projects .project-status-group:first-child.expanded {
+    .project-empty.has-projects .project-status-group.expanded {
         display: flex;
-        flex: 0 0 55%;
+        flex: 1 1 0;
         flex-direction: column;
         min-height: 0;
     }
-    .project-empty.has-projects .project-status-group:first-child.expanded .status-project-list {
+    .project-empty.has-projects .project-status-group:first-child.expanded {
+        flex: 0 0 55%;
+    }
+    .project-empty.has-projects
+        .project-status-group:first-child.expanded
+        .status-project-list {
         overflow-y: auto;
     }
     .project-status-heading {
@@ -208,7 +221,7 @@
         cursor: pointer;
     }
     .project-status-heading:focus-visible {
-        outline: 2px solid $primary;
+        outline: 2px solid $primary-500;
         outline-offset: 2px;
     }
     .status-project-list {
@@ -216,6 +229,11 @@
         flex-direction: column;
         gap: 8px;
         padding: 0 0 12px 40px;
+    }
+    #on-progress-projects,
+    #completed-projects {
+        min-height: 0;
+        overflow-y: auto;
     }
     .status-project-list:empty {
         display: none;
@@ -225,13 +243,15 @@
     }
     .status-project-list .project-item {
         height: 40px;
+        min-height: 40px;
+        flex-shrink: 0;
         border: 0;
         border-radius: 0;
         background: transparent;
     }
     .status-project-list .project-item:hover,
     .status-project-list .project-item.active {
-        background: #eef1ff;
+        background: $background-500;
     }
     .status-chevron {
         width: 12px;
@@ -250,15 +270,15 @@
         justify-content: center;
         width: 38px;
         height: 38px;
-        border: 1px solid $border-color;
+        border: 1px solid $neutral-100;
         border-radius: 10px;
-        background: #fff;
+        background: $base-white;
         color: $neutral-900;
     }
     .project-status-divider {
         width: 100%;
         height: 1px;
-        background: $border-color;
+        background: $neutral-100;
     }
     .project-items {
         display: none;
@@ -273,38 +293,49 @@
     }
     .project-item {
         display: flex;
+        flex-shrink: 0;
         justify-content: space-between;
         align-items: center;
         width: 100%;
         height: 40px;
         padding: 0 8px;
-        border: 1px solid #dde3f0;
+        border: 1px solid $neutral-100;
         border-radius: 8px;
-        background: #f9f9ff;
+        background: $base-white;
         cursor: pointer;
         transition: 0.2s;
     }
     .project-item:hover {
-        background: #f0f3ff;
+        background: $background-100;
     }
     .project-item.active {
-        background: #dde1ff;
+        background: $background-500;
     }
     .project-name {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .project-owner-label {
+        flex-shrink: 0;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: $background-900;
+        color: $neutral-500;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
     .project-item .more {
         font-size: 18px;
-        color: #8b95a7;
+        color: $neutral-400;
     }
     .empty-center {
         display: flex;
         justify-content: center;
         align-items: center;
         flex: 1;
-        color: #8b95a7;
+        color: $neutral-400;
     }
     .form-group {
         display: flex;
@@ -317,7 +348,7 @@
     .form-group input {
         height: 52px;
         padding: 0 12px;
-        border: 1px solid $border-color;
+        border: 1px solid $neutral-100;
         border-radius: 12px;
         outline: none;
     }
@@ -325,13 +356,13 @@
         height: 140px;
         resize: none;
         padding: 12px;
-        border: 1px solid $border-color;
+        border: 1px solid $neutral-100;
         border-radius: 12px;
         outline: none;
     }
     .form-group input:focus,
     .form-group textarea:focus {
-        border-color: #4d66f4;
+        border-color: $primary-500;
     }
     .project-detail-body {
         display: flex;
@@ -341,6 +372,9 @@
         padding: 24px;
         overflow-y: auto;
     }
+    .project-detail-panel[hidden] {
+        display: none;
+    }
     .detail-field {
         display: flex;
         flex-direction: column;
@@ -349,10 +383,10 @@
     .detail-field input,
     .detail-field textarea {
         width: 100%;
-        border: 1px solid #dde3f0;
+        border: 1px solid $neutral-100;
         border-radius: 8px;
-        background: #fff;
-        color: #11131a;
+        background: $base-white;
+        color: $neutral-900;
         font: inherit;
         box-sizing: border-box;
         outline: none;
@@ -368,14 +402,14 @@
     }
     .detail-field input:disabled,
     .detail-field textarea:disabled {
-        border-color: #e9ebef;
-        background: #f4f5f8;
-        color: #9ea3b8;
+        border-color: $neutral-100;
+        background: $background-500;
+        color: $neutral-400;
         cursor: default;
     }
     .detail-field input:not(:disabled):focus,
     .detail-field textarea:not(:disabled):focus {
-        border-color: #4d66f4;
+        border-color: $primary-500;
     }
     .detail-members {
         display: flex;
@@ -392,15 +426,15 @@
         align-items: center;
         min-height: 40px;
         padding: 0 16px;
-        border-bottom: 1px solid #e9ebef;
+        border-bottom: 1px solid $neutral-100;
     }
     .detail-member-head {
-        color: #9ea3b8;
-        border-top: 1px solid #e9ebef;
+        color: $neutral-400;
+        border-top: 1px solid $neutral-100;
     }
     .detail-member-row {
         position: relative;
-        color: #11131a;
+        color: $neutral-900;
     }
     .detail-member-delete {
         position: absolute;
@@ -415,7 +449,7 @@
         transform: translateY(-50%);
         border: 0;
         background: transparent;
-        color: $placeholder;
+        color: $neutral-300;
         cursor: pointer;
     }
     .detail-member-delete svg {
@@ -427,18 +461,20 @@
         stroke-linejoin: round;
         stroke-width: 1.8;
     }
-    #state-project-detail.is-editing .detail-member-row:hover .detail-member-delete,
+    #state-project-detail.is-editing
+        .detail-member-row:hover
+        .detail-member-delete,
     #state-project-detail.is-editing .detail-member-delete:focus-visible {
         display: flex;
     }
     .detail-member-delete:hover {
-        color: $danger-light;
+        color: $danger-500;
     }
     .detail-member-empty {
         min-height: 40px;
         padding: 0 16px;
-        border-bottom: 1px solid #e9ebef;
-        color: #9ea3b8;
+        border-bottom: 1px solid $neutral-100;
+        color: $neutral-400;
         line-height: 40px;
     }
     .detail-add-member {
@@ -451,7 +487,7 @@
         border: 0;
         border-bottom: 1px solid $neutral-100;
         background: transparent;
-        color: $placeholder;
+        color: $neutral-300;
         text-align: left;
         cursor: pointer;
     }
@@ -463,7 +499,7 @@
         display: flex;
     }
     .detail-add-member:hover {
-        background: $background;
+        background: $background-500;
     }
     @at-root {
         .delete-project-backdrop {
@@ -477,9 +513,9 @@
         }
         .delete-project-modal {
             width: 480px;
-            border: 1px solid #dde3f0;
+            border: 1px solid $neutral-100;
             border-radius: 12px;
-            background: #fff;
+            background: $base-white;
             box-shadow: 0 16px 36px rgba(17, 19, 26, 0.16);
             overflow: hidden;
         }
@@ -489,11 +525,11 @@
             justify-content: space-between;
             height: 56px;
             padding: 0 16px;
-            border-bottom: 1px solid #e9ebef;
+            border-bottom: 1px solid $neutral-100;
         }
         .delete-project-modal-header h2 {
             margin: 0;
-            color: #11131a;
+            color: $neutral-900;
             font-size: 20px;
             font-weight: 600;
         }
@@ -503,7 +539,7 @@
             padding: 0;
             border: 0;
             background: transparent;
-            color: #6f7788;
+            color: $neutral-400;
             cursor: pointer;
             font-size: 24px;
             line-height: 1;
@@ -524,7 +560,7 @@
             justify-content: flex-end;
             gap: 10px;
             padding: 12px 16px;
-            border-top: 1px solid #e9ebef;
+            border-top: 1px solid $neutral-100;
         }
         .delete-project-modal-footer button {
             min-width: 100px;
@@ -535,12 +571,12 @@
             font: inherit;
         }
         .delete-project-cancel {
-            background: #e9edf7;
-            color: #11131a;
+            background: $background-500;
+            color: $neutral-900;
         }
         .delete-project-confirm {
-            background: #ff6b6b;
-            color: #fff;
+            background: $danger-700;
+            color: $base-white;
         }
     }
     .task-body {
@@ -563,15 +599,15 @@
         align-items: center;
         height: 37px;
         padding: 0;
-        border-bottom: 1px solid #eef2f7;
-        color: #9ea3b8;
-        font-family: Inter, sans-serif;
+        border-bottom: 1px solid $neutral-100;
+        color: $neutral-400;
+        font-family: $font-family;
         font-size: 16px;
         font-weight: 400;
         line-height: 1.45;
     }
     .task-header > .helper-text {
-        font-family: Inter, sans-serif;
+        font-family: $font-family;
         font-size: 20px;
         line-height: 1.45;
     }
@@ -596,7 +632,7 @@
         justify-content: center;
         align-items: center;
         flex: 1;
-        color: #8b95a7;
+        color: $neutral-400;
     }
     .task-row {
         display: grid;
@@ -610,9 +646,9 @@
         align-items: center;
         min-height: 40px;
         padding: 0;
-        border-bottom: 1px solid #eef2f7;
+        border-bottom: 1px solid $neutral-100;
         transition: 0.2s;
-        color: #11131a;
+        color: $neutral-900;
         font-size: 16px;
         font-weight: 400;
         line-height: 1.45;
@@ -620,13 +656,13 @@
     .task-row input,
     .task-row select,
     .task-row button {
-        font-family: Inter, sans-serif;
+        font-family: $font-family;
         font-size: 16px;
         font-weight: 400;
         line-height: 1.45;
     }
     .task-row:hover {
-        background: #fff;
+        background: $base-white;
     }
     .task-inline-input {
         width: calc(100% - 12px);
@@ -635,18 +671,18 @@
         border: 1px solid transparent;
         border-radius: 6px;
         background: transparent;
-        color: #11131a;
+        color: $neutral-900;
         font: inherit;
         outline: none;
         box-sizing: border-box;
     }
     .task-inline-input:hover {
-        border-color: #dde3f0;
-        background: #fff;
+        border-color: $neutral-100;
+        background: $base-white;
     }
     .task-inline-input:focus {
-        border-color: #4d66f4;
-        background: #fff;
+        border-color: $primary-500;
+        background: $base-white;
         box-shadow: 0 0 0 2px rgba(77, 102, 244, 0.1);
     }
     .task-date-input {
@@ -654,12 +690,12 @@
         max-width: 140px;
         height: 32px;
         padding: 0;
-        color: #11131a;
+        color: $neutral-900;
         cursor: pointer;
     }
     .task-date-input:not(.has-value),
     .task-date-input:not(.has-value)::-webkit-datetime-edit {
-        color: #9ea3b8;
+        color: $neutral-300;
     }
     .task-date-input::-webkit-calendar-picker-indicator {
         opacity: 1;
@@ -678,7 +714,7 @@
         padding: 0;
     }
     .main-task-summary {
-        color: $placeholder;
+        color: $neutral-300;
         font-size: 16px;
         line-height: 1.45;
     }
@@ -709,7 +745,7 @@
         padding: 0;
         border: none;
         background: transparent;
-        color: #b9c5e5;
+        color: $neutral-500;
         cursor: pointer;
         font-size: 24px;
         line-height: 1;
@@ -723,10 +759,10 @@
         left: 55%;
         flex-shrink: 0;
         margin: 0;
-        color: #11131a;
+        color: $neutral-900;
     }
     .subtask-row .task-name-column {
-        padding-left: 0;
+        padding-left: 28px;
     }
     .create-subtask-btn {
         display: flex;
@@ -734,11 +770,11 @@
         gap: 10px;
         width: 100%;
         min-height: 48px;
-        padding: 0 20px 0 120px;
+        padding: 0 20px 0 148px;
         border: none;
-        border-bottom: 1px solid #eef2f7;
-        background: #fff;
-        color: #9ea3b8;
+        border-bottom: 1px solid $neutral-100;
+        background: $base-white;
+        color: $neutral-500;
         cursor: pointer;
         font-size: 14px;
         text-align: left;
@@ -747,13 +783,14 @@
         display: none;
     }
     .task-row:not(.subtask-row):hover + .hover-subtask-btn,
+    .subtask-row:hover + .hover-subtask-btn,
     .hover-subtask-btn:hover {
         display: flex;
     }
     .create-subtask-btn span:first-child {
         font-size: 22px;
         line-height: 1;
-        color: #4d66f4;
+        color: $neutral-500;
     }
     .status-column {
         display: flex;
@@ -783,7 +820,7 @@
         padding: 0;
         border: none;
         background: transparent;
-        color: #c4cae0;
+        color: $neutral-500;
         cursor: pointer;
         font-size: 20px;
     }
@@ -802,29 +839,37 @@
         stroke-width: 2;
     }
     .task-status.assigned {
-        background: #ffc857;
-        color: #fff;
+        background: $warning-300;
+        color: $base-white;
     }
     .task-status.in-progress {
-        border: 4px solid #7b9bff;
-        border-right-color: #b7c6ff;
+        border: 4px solid $primary-500;
+        border-right-color: $primary-100;
         border-radius: 50%;
     }
     .task-status.done {
-        background: #16a34a;
-        color: #fff;
+        background: $success-700;
+        color: $base-white;
     }
     .task-status:disabled {
         cursor: default;
     }
     .task-delete {
         border-radius: 8px;
-        color: #c4cae0;
+        color: $neutral-500;
         font-size: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .task-row:hover .task-delete,
+    .task-delete:focus-visible {
+        opacity: 1;
+        pointer-events: auto;
     }
     .task-delete:hover {
         background: transparent;
-        color: #ff6b6b;
+        color: $danger-500;
     }
     .task-delete svg {
         width: 18px;
@@ -845,7 +890,7 @@
         border-radius: 0;
         outline: none;
         background: transparent;
-        color: #9ea3b8;
+        color: $neutral-500;
         font: inherit;
         box-sizing: border-box;
     }
@@ -854,20 +899,20 @@
         border: none;
     }
     .task-row.editing input::placeholder {
-        color: #9ea3b8;
+        color: $neutral-500;
         opacity: 1;
     }
     .task-row.editing input[type="date"]::-webkit-datetime-edit {
-        color: #9ea3b8;
+        color: $neutral-500;
     }
     .task-row.editing input[type="date"].has-value::-webkit-datetime-edit {
-        color: #11131a;
+        color: $neutral-900;
     }
     .task-row.editing input:not(:placeholder-shown) {
-        color: #11131a;
+        color: $neutral-900;
     }
     .member-picker[data-value]:not([data-value=""]) {
-        color: #11131a;
+        color: $neutral-900;
     }
     .task-row.editing select {
         cursor: pointer;
@@ -897,9 +942,9 @@
             flex-direction: column;
             width: 640px;
             min-height: 720px;
-            border: 1px solid #9ea3b8;
+            border: 1px solid $neutral-500;
             border-radius: 12px;
-            background: #fff;
+            background: $base-white;
             overflow: hidden;
         }
         .member-modal-header {
@@ -908,7 +953,7 @@
             justify-content: space-between;
             height: 52px;
             padding: 0 14px;
-            border-bottom: 1px solid #e9ebef;
+            border-bottom: 1px solid $neutral-100;
             font-size: 20px;
             font-weight: 600;
         }
@@ -925,12 +970,12 @@
             gap: 12px;
             min-height: 44px;
             padding: 0 14px;
-            border-bottom: 1px solid #dde3f0;
-            color: #9ea3b8;
+            border-bottom: 1px solid $neutral-100;
+            color: $neutral-500;
             font-size: 16px;
         }
         .member-current strong {
-            color: #11131a;
+            color: $neutral-900;
             font-weight: 400;
         }
         .member-modal-table,
@@ -941,7 +986,7 @@
             min-height: 40px;
             padding: 0 14px;
             border: none;
-            border-bottom: 1px solid #dde3f0;
+            border-bottom: 1px solid $neutral-100;
             background: transparent;
             text-align: left;
         }
@@ -957,12 +1002,12 @@
             padding: 0;
             border: none;
             background: transparent;
-            color: #9ea3b8;
+            color: $neutral-500;
             cursor: pointer;
             transform: translateY(-50%);
         }
         .member-modal-head {
-            color: #9ea3b8;
+            color: $neutral-500;
             font-size: 16px;
         }
         .member-option {
@@ -989,10 +1034,10 @@
             padding: 12px 44px;
             border-top: none;
             border-right: none;
-            border-bottom: 1px solid #dde3f0;
+            border-bottom: 1px solid $neutral-100;
             border-left: none;
             background: transparent;
-            color: #9ea3b8;
+            color: $neutral-500;
             font-size: 16px;
             text-align: left;
             cursor: pointer;
@@ -1000,7 +1045,7 @@
         .member-selection-error {
             display: none;
             margin: 12px 14px 0;
-            color: #ff6b6b;
+            color: $danger-500;
             font-size: 14px;
             line-height: 1.4;
         }
@@ -1011,18 +1056,18 @@
             display: flex;
             flex-direction: column;
             width: 640px;
-            border: 1px solid #dde3f0;
+            border: 1px solid $neutral-100;
             border-radius: 8px;
-            background: #fff;
+            background: $base-white;
             overflow: hidden;
         }
         .member-delete-modal {
             display: flex;
             flex-direction: column;
             width: 480px;
-            border: 1px solid #dde3f0;
+            border: 1px solid $neutral-100;
             border-radius: 12px;
-            background: #fff;
+            background: $base-white;
             overflow: hidden;
         }
         .member-delete-content {
@@ -1038,26 +1083,26 @@
             margin-bottom: 0;
         }
         .member-delete-content strong {
-            color: #11131a;
+            color: $neutral-900;
             font-weight: 500;
         }
         .member-modal-footer .member-delete-confirm {
-            background: #ff6b6b;
-            color: #fff;
+            background: $danger-500;
+            color: $base-white;
         }
         .invite-member-content {
             padding: 16px 8px 46px;
         }
         .invite-member-content p {
             margin: 0 0 12px;
-            color: #4b5563;
+            color: $neutral-500;
             font-size: 16px;
         }
         .invite-member-content input {
             width: 100%;
             height: 38px;
             padding: 0 8px;
-            border: 1px solid #dde3f0;
+            border: 1px solid $neutral-100;
             border-radius: 8px;
             box-sizing: border-box;
         }
@@ -1067,32 +1112,33 @@
             gap: 8px;
             margin-top: auto;
             padding: 12px;
-            border-top: 1px solid #e9ebef;
+            border-top: 1px solid $neutral-100;
         }
         .member-modal-footer button {
             width: 100px;
             height: 30px;
             border: none;
             border-radius: 8px;
-            background: #e9edf7;
+            background: $background-100;
+            color: $neutral-700;
             cursor: pointer;
         }
         .member-modal-footer .member-confirm {
-            background: #4a6cf7;
-            color: #fff;
+            background: $primary-500;
+            color: $base-white;
         }
         .member-modal-footer .invite-confirm {
-            background: #4a6cf7;
-            color: #fff;
+            background: $primary-500;
+            color: $base-white;
         }
     }
     #editing-priority {
-        color: #9ea3b8;
+        color: $neutral-500;
         appearance: none;
         -webkit-appearance: none;
     }
     #editing-priority.has-value {
-        color: #11131a;
+        color: $neutral-900;
     }
     .task-row.editing .assigned-column select {
         width: 96px;
@@ -1100,7 +1146,7 @@
     .task-row.editing .date-column input {
         width: 140px;
         max-width: 140px;
-        color: #9ea3b8;
+        color: $neutral-500;
         padding: 0;
         background-image: none;
     }
@@ -1143,16 +1189,16 @@
         display: none;
     }
     .task-save {
-        color: #16a34a;
+        color: $success-700;
     }
     .task-save:hover {
-        background: #dcfce7;
+        background: $success-300;
     }
     .task-cancel {
-        color: #dc2626;
+        color: $danger-500;
     }
     .task-cancel:hover {
-        background: #fee2e2;
+        background: $danger-700;
     }
     .priority-badge {
         display: inline-flex;
@@ -1165,16 +1211,20 @@
         font-size: 16px;
     }
     .priority-badge.low {
-        background: #dcfce7;
-        color: #16a34a;
+        background: $success-background;
+        color: $success-700;
     }
     .priority-badge.medium {
-        background: #fef3c7;
-        color: #d97706;
+        background: $warning-background;
+        color: $warning-700;
     }
     .priority-badge.high {
-        background: #fee2e2;
-        color: #ef4444;
+        background: $danger-background;
+        color: $danger-700;
+    }
+    .priority-badge.default {
+        background: $neutral-200;
+        color: $neutral-700;
     }
     .task-priority-select {
         width: 104px;
@@ -1197,38 +1247,44 @@
         background-image: none;
     }
     .task-priority-select option {
-        background: #fff;
-        color: #11131a;
+        background: $base-white;
+        color: $neutral-900;
         text-align: left;
     }
     .task-priority-select.default {
-        background-color: transparent;
-        color: #9ea3b8;
+        background-color: $neutral-200;
+        color: $neutral-700;
+        padding: 0 10px;
+        text-align: center;
+        text-align-last: center;
     }
     .task-priority-select.low {
-        background-color: #dcfce7;
-        color: #16a34a;
+        background-color: $success-background;
+        color: $success-700;
         padding: 0 10px;
         text-align: center;
         text-align-last: center;
     }
     .task-priority-select.medium {
-        background-color: #fef3c7;
-        color: #d97706;
+        background-color: $warning-background;
+        color: $warning-700;
         padding: 0 10px;
         text-align: center;
         text-align-last: center;
     }
     .task-priority-select.high {
-        background-color: #fee2e2;
-        color: #ef4444;
+        background-color: $danger-background;
+        color: $danger-700;
         padding: 0 10px;
         text-align: center;
         text-align-last: center;
     }
     .task-priority-select:focus-visible {
-        outline: 2px solid #4d66f4;
+        outline: 2px solid $primary-500;
         outline-offset: 2px;
+    }
+    .create-task-button[hidden] {
+        display: none;
     }
     .create-task-button {
         display: flex;
@@ -1237,11 +1293,11 @@
         height: 48px;
         padding: 0 20px 0 120px;
         border: none;
-        background: #fff;
-        border-bottom: 1px solid #eef2f7;
+        background: $base-white;
+        border-bottom: 1px solid $neutral-100;
         cursor: pointer;
-        color: #9ea3b8;
-        font-family: Inter, sans-serif;
+        color: $neutral-500;
+        font-family: $font-family;
         font-size: 16px;
         transition: 0.2s;
     }
@@ -1250,61 +1306,14 @@
         line-height: 1.45;
     }
     .create-task-button:hover {
-        background: #fff;
+        background: $base-white;
     }
     .create-subtask-btn:hover {
-        background: #fff;
+        background: $base-white;
     }
     .create-task-button span:first-child {
         font-size: 22px;
-        color: #9ea3b8;
-    }
-    .project-toast {
-        position: fixed;
-        top: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        min-width: 240px;
-        max-width: 360px;
-        padding: 16px;
-        background: $success-light;
-        border: 1px solid $border-color;
-        border-radius: 12px;
-        z-index: 9999;
-    }
-    .project-toast.show {
-        display: flex;
-    }
-    .toast-icon {
-        display: none;
-    }
-    .project-toast.success .toast-icon {
-        display: none;
-    }
-    .project-toast.error .toast-icon {
-        display: none;
-    }
-    .toast-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .toast-title {
-        display: none;
-    }
-    .toast-message {
-        color: #fff;
-        font-size: 14px;
-        font-weight: 600;
-        line-height: 1.4;
-        letter-spacing: 0.002em;
-        text-align: center;
-    }
-    .project-toast.error {
-        background: $danger-light;
+        color: $neutral-500;
     }
     .project-items::-webkit-scrollbar,
     .task-list::-webkit-scrollbar {
@@ -1312,72 +1321,43 @@
     }
     .project-items::-webkit-scrollbar-thumb,
     .task-list::-webkit-scrollbar-thumb {
-        background: #d5dceb;
+        background: $neutral-100;
         border-radius: 999px;
     }
 }
 @media (max-width: 992px) {
-    .project-body {
-        grid-template-columns: 1fr;
+    #project-wrapper {
+        .project-body {
+            grid-template-columns: 1fr;
+        }
     }
 }
 @media (max-width: 768px) {
     #project-wrapper {
         padding: 12px;
+
+        .project-header {
+            flex-direction: column;
+            align-items: flex-start;
+            height: auto;
+            gap: 12px;
+        }
+
+        .task-header,
+        .task-row {
+            grid-template-columns:
+                50px
+                2fr
+                1fr
+                1fr
+                1fr
+                60px;
+        }
     }
-    .project-header {
-        flex-direction: column;
-        align-items: flex-start;
-        height: auto;
-        gap: 12px;
-    }
-    .task-header,
-    .task-row {
-        grid-template-columns:
-            50px
-            2fr
-            1fr
-            1fr
-            1fr
-            60px;
-    }
 }
-body > .project-toast {
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    z-index: 9999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    min-width: 240px;
-    max-width: 360px;
-    padding: 16px;
-    transform: translateX(-50%);
-    border: 1px solid $border-color;
-    border-radius: 12px;
-    background: $success-light;
-}
-body > .project-toast.show {
-    display: flex;
-}
-body > .project-toast.error {
-    background: $danger-light;
-}
-body > .project-toast .toast-icon,
-body > .project-toast .toast-title {
-    display: none;
-}
-body > .project-toast .toast-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-body > .project-toast .toast-message {
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.4;
-    letter-spacing: 0.002em;
-    text-align: center;
-}
+
+
+
+
+
+

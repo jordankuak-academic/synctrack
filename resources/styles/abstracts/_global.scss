@@ -10,107 +10,103 @@
 */
 
 @use "./variables" as *;
+@use "./mixins" as *;
 
-.display-l {
-  font-family: $font-family;
-  font-weight: 700;
-  font-size: 48px;
-  letter-spacing: -0.003em;
-  line-height: 125%;
+// Typography
+.heading-01 { @include heading-01; }
+.heading-02 { @include heading-02; }
+.heading-03 { @include heading-03; }
+.heading-04 { @include heading-04; }
+.body-l { @include body-l; }
+.body-m { @include body-m; }
+.body-s { @include body-s; }
+.caption-l { @include caption-l; }
+.caption-s { @include caption-s; }
+.helper-text { @include helper-text; }
+.label-m { @include label-m; }
+.label-s { @include label-s; }
+
+// Theme Button
+.page-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  min-height: 48px;
 }
 
-.heading-01 {
-  font-family: $font-family;
-  font-weight: 600;
-  font-size: 32px;
-  letter-spacing: -0.002em;
-  line-height: 130%;
-}
-
-.heading-02 {
-  font-family: $font-family;
-  font-weight: 600;
-  font-size: 28px;
-  letter-spacing: -0.002em;
-  line-height: 135%;
-}
-
-.heading-03 {
-  font-family: $font-family;
-  font-weight: 600;
-  font-size: 24px;
-  letter-spacing: -0.001em;
-  line-height: 140%;
-}
-
-.heading-04 {
-  font-family: $font-family;
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 0;
-  line-height: 145%;
-}
-
-.body-l {
-  font-family: $font-family;
-  font-weight: 500;
-  font-size: 18px;
-  letter-spacing: 0;
-  line-height: 170%;
-}
-
-.body-m {
-  font-family: $font-family;
-  font-weight: 400;
-  font-size: 16px;
-  letter-spacing: 0;
-  line-height: 175%;
-}
-
-.body-s {
-  font-family: $font-family;
-  font-weight: 400;
-  font-size: 14px;
-  letter-spacing: 0;
-  line-height: 160%;
-}
-
-.caption-l {
-  font-family: $font-family;
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: -0.001em;
-  line-height: 150%;
-}
-
-.caption-s {
-  font-family: $font-family;
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: -0.001em;
-  line-height: 140%;
-}
-
-.helper-text {
-  font-family: $font-family;
-  font-weight: 400;
-  font-size: 12px;
-  letter-spacing: 0;
-  line-height: 140%;
-}
-
-.label-m {
-  font-family: $font-family;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: -0.002em;
-  line-height: 140%;
-}
-
-.label-s {
-  font-family: $font-family;
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: -0.003em;
-  line-height: 130%;
+.st-btn {
+  @include label-m;
+  
+  align-items: center;
+  border: none;
+  border-radius: 10px;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  height: 44px;
+  justify-content: center;
+  padding-left: 20px;
+  padding-right: 20px;
+  width: 160px;
+  cursor: pointer;
+  
+  &.st-btn-primary {
+    background-color: $primary-500;
+    color: $base-white;
+    
+    &:hover {
+      background-color: $primary-700;
+    }
+  }
+  
+  &.st-btn-secondary {
+    background-color: $neutral-400;
+    color: $base-white;
+    
+    &:hover {
+      background-color: $neutral-500;
+    }
+  }
+  
+  &.st-btn-danger {
+    background-color: $danger-500;
+    color: $base-white;
+    
+    &:hover {
+      background-color: $danger-700;
+    }
+  }
+  
+  &.st-btn-warning {
+    background-color: $warning-500;
+    color: $neutral-900;
+    
+    &:hover {
+      background-color: $warning-700;
+    }
+  }
+  
+  &.st-btn-success {
+    background-color: $success-500;
+    color: $base-white;
+    
+    &:hover {
+      background-color: $success-700;
+    }
+  }
+  
+  &.st-btn-block {
+    display: flex;
+    width: 100%;
+  }
+  
+  &.st-btn-md {
+    height: 52px;
+  }
+  
+  &.st-btn-lg {
+    @include heading-03;
+    height: 64px;
+  }
 }

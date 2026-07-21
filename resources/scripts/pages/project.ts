@@ -1,4 +1,4 @@
-import Controller from "../utils/controller";
+import Controller from "@/utils/Controller";
 type TaskStatus = "assigned" | "in-progress" | "done";
 type TaskPriority = "" | "Low" | "Medium" | "High";
 interface Task {
@@ -18,6 +18,8 @@ interface ProjectItem {
     id: number;
     name: string;
     description: string;
+    canManage: boolean;
+    ownershipLabel: string;
     tasks: Task[];
     members: MemberItem[];
 }
@@ -35,24 +37,20 @@ export default class Project extends Controller {
     private readonly STATE_PROJECT_DETAIL = "state-project-detail";
     private projects: ProjectItem[] = [];
     private currentProject = -1;
+    private currentUserId = 0;
     private editing = false;
     private editingParentTaskId: number | null = null;
+    private savingTask = false;
     private members: MemberItem[] = [];
     private projectDetailEditing = false;
-    private toastTimer: number | null = null;
     protected initialize(): void {
         queueMicrotask(() => {
-            this.mountToasts();
+            this.currentUserId = Number(this.rootElement.dataset.currentUserId ?? 0);
             this.registerEvents();
             this.loadProjects();
             this.restoreProjectGroups();
             this.restoreSelectedProject();
         });
-    }
-    private mountToasts(): void {
-        this.querySelectorAll<HTMLElement>(".project-toast").forEach(
-            (toast) => document.body.appendChild(toast),
-        );
     }
     private restoreSelectedProject(): void {
         const storedProjectId = sessionStorage.getItem(
@@ -103,6 +101,8 @@ export default class Project extends Controller {
                 id: projectId,
                 name: panel.dataset.projectTitle ?? "",
                 description: panel.dataset.projectDescription ?? "",
+                canManage: panel.dataset.canManage === "true",
+                ownershipLabel: panel.dataset.ownershipLabel ?? "Member Project",
                 members,
                 tasks: taskRows.map((row) => {
                     const taskId = Number(row.dataset.taskId);
@@ -175,7 +175,10 @@ export default class Project extends Controller {
                 html,
                 "text/html",
             );
-            if (this.refreshProjectMarkup(documentResult)) {
+            this.showSharedToast(documentResult);
+            const succeeded = !this.sharedToastIsError(documentResult);
+
+            if (succeeded && this.refreshProjectMarkup(documentResult)) {
                 if (selectCreatedProject && this.projects.length > 0) {
                     this.selectProject(this.projects.length - 1);
                 } else {
@@ -183,9 +186,9 @@ export default class Project extends Controller {
                 }
             }
             if (showProjectToast) {
-                this.showToast(true);
+                this.showToast(succeeded);
             }
-            return true;
+            return succeeded;
         } catch (error) {
             console.error(error);
             if (showProjectToast) {
@@ -222,18 +225,32 @@ export default class Project extends Controller {
         return true;
     }
     private taskFields(task: Task): Record<string, string> {
+        return {
+            assignee_id: task.assigneeId,
+            title: task.name,
+            due_date: task.dueDate,
+            priority: this.backendPriority(task),
+            status: this.backendStatus(task.status),
+        };
+    }
+    private backendPriority(task: Task): string {
+        return task.parentTaskId == null
+            ? (task.priority || "Low").toLowerCase()
+            : task.priority.toLowerCase();
+    }
+    private taskStatusFields(task: Task): Record<string, string> {
+        return {
+            status: this.backendStatus(task.status),
+        };
+    }
+    private backendStatus(status: TaskStatus): string {
         const statuses: Record<TaskStatus, string> = {
             assigned: "draft",
             "in-progress": "in_progress",
             done: "completed",
         };
-        return {
-            assignee_id: task.assigneeId,
-            title: task.name,
-            due_date: task.dueDate,
-            priority: task.priority.toLowerCase(),
-            status: statuses[task.status],
-        };
+
+        return statuses[status];
     }
     private async sendRequest(
         action: string,
@@ -258,7 +275,19 @@ export default class Project extends Controller {
                 },
                 body,
             });
-            return response.ok;
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const html = await response.text();
+            const documentResult = new DOMParser().parseFromString(
+                html,
+                "text/html",
+            );
+            this.showSharedToast(documentResult);
+
+            return !this.sharedToastIsError(documentResult);
         } catch (error) {
             console.error(error);
             return false;
@@ -270,6 +299,14 @@ export default class Project extends Controller {
             `/${endpoint}/${task.id}`,
             "PUT",
             this.taskFields(task),
+        );
+    }
+    private persistTaskStatus(task: Task): void {
+        const endpoint = task.parentTaskId == null ? "task" : "subtask";
+        void this.sendRequest(
+            `/${endpoint}/${task.id}`,
+            "PUT",
+            this.taskStatusFields(task),
         );
     }
     private registerEvents(): void {
@@ -355,16 +392,25 @@ export default class Project extends Controller {
                 return;
             }
             if (target.closest(".detail-add-member")) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.openInviteMemberModal(undefined, true);
                 return;
             }
             if (target.closest("#create-task-btn")) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.addTaskRow();
                 return;
             }
             const memberPicker =
                 target.closest<HTMLButtonElement>(".member-picker");
             if (memberPicker) {
+                if (!this.currentProjectCanManage() || memberPicker.disabled) {
+                    return;
+                }
                 this.openMemberModal(memberPicker);
                 return;
             }
@@ -372,12 +418,18 @@ export default class Project extends Controller {
                 ".create-subtask-btn",
             );
             if (subtaskButton) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.addTaskRow(Number(subtaskButton.dataset.parentTaskId));
                 return;
             }
             const addSubtaskButton =
                 target.closest<HTMLButtonElement>(".task-add-subtask");
             if (addSubtaskButton) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.addTaskRow(Number(addSubtaskButton.dataset.parentTaskId));
                 return;
             }
@@ -407,6 +459,9 @@ export default class Project extends Controller {
             const deleteButton =
                 target.closest<HTMLButtonElement>(".task-delete");
             if (deleteButton) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.deleteTask(
                     Number(deleteButton.dataset.taskId),
                     deleteButton.closest(".subtask-row") !== null,
@@ -416,7 +471,14 @@ export default class Project extends Controller {
         });
         document.addEventListener("change", (event) => {
             const target = event.target as HTMLInputElement | HTMLSelectElement;
+            if (target.id === "editing-task-name") {
+                void this.saveTask();
+                return;
+            }
             if (target.classList.contains("task-name-input")) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 this.updateTaskField(
                     Number(target.dataset.taskId),
                     "name",
@@ -426,6 +488,9 @@ export default class Project extends Controller {
                 return;
             }
             if (target.classList.contains("task-date-input")) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 target.classList.toggle("has-value", Boolean(target.value));
                 this.updateTaskField(
                     Number(target.dataset.taskId),
@@ -439,6 +504,9 @@ export default class Project extends Controller {
                 target instanceof HTMLSelectElement &&
                 target.classList.contains("task-priority-select")
             ) {
+                if (!this.currentProjectCanManage()) {
+                    return;
+                }
                 target.classList.remove("default", "low", "medium", "high");
                 target.classList.add(
                     target.value ? target.value.toLowerCase() : "default",
@@ -449,6 +517,13 @@ export default class Project extends Controller {
                     target.closest(".subtask-row") !== null,
                 );
                 return;
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            const target = event.target as HTMLInputElement;
+            if (target.id === "editing-task-name" && event.key === "Enter") {
+                event.preventDefault();
+                void this.saveTask();
             }
         });
     }
@@ -466,8 +541,10 @@ export default class Project extends Controller {
     }
     private async createProject(): Promise<void> {
         if (!this.validateProject()) {
-            this.showToast(false);
-            this.leaveCreateProject();
+            this.showClientToast(
+                "Create Project failed.Please try again.",
+                false,
+            );
             return;
         }
         const name = this.querySelector<HTMLInputElement>("#project-name")!;
@@ -551,7 +628,7 @@ export default class Project extends Controller {
             if (index === this.currentProject) {
                 button.classList.add("active");
             }
-            button.innerHTML = `<span class="project-name body-s">${project.name}</span>`;
+            button.innerHTML = `<span class="project-name body-s">${project.name}</span><span class="project-owner-label">${project.ownershipLabel}</span>`;
             const completed =
                 project.tasks.length > 0 &&
                 project.tasks.every((task) => task.status === "done");
@@ -611,6 +688,10 @@ export default class Project extends Controller {
         this.members = this.projects[index]?.members ?? [];
         this.showProjectPanels(this.projects[index].id);
         this.showState(this.STATE_PROJECT);
+        this.renderTasks();
+    }
+    private currentProjectCanManage(): boolean {
+        return this.projects[this.currentProject]?.canManage === true;
     }
     private showProjectPanels(projectId: number): void {
         this.querySelectorAll<HTMLElement>(".project-item").forEach((button) => {
@@ -754,13 +835,13 @@ export default class Project extends Controller {
             if (deleted) {
                 this.openProjectDetail();
                 this.setProjectDetailEditing(true);
-                this.showNamedToast("#toast-member-delete");
             }
         });
         document.body.appendChild(modal);
     }
     private setProjectDetailEditing(editing: boolean): void {
-        this.projectDetailEditing = editing;
+        const isEditingAllowed = editing && this.currentProjectCanManage();
+        this.projectDetailEditing = isEditingAllowed;
         const name = this.querySelector<HTMLInputElement>(
             "#detail-project-name",
         );
@@ -768,13 +849,13 @@ export default class Project extends Controller {
             "#detail-project-description",
         );
         const detail = this.querySelector<HTMLElement>("#state-project-detail");
-        name && (name.disabled = !editing);
-        description && (description.disabled = !editing);
-        detail?.classList.toggle("is-editing", editing);
+        name && (name.disabled = !isEditingAllowed);
+        description && (description.disabled = !isEditingAllowed);
+        detail?.classList.toggle("is-editing", isEditingAllowed);
         if (detail?.classList.contains("active")) {
             this.showState(this.STATE_PROJECT_DETAIL);
         }
-        if (editing) {
+        if (isEditingAllowed) {
             name?.focus();
         }
     }
@@ -798,10 +879,7 @@ export default class Project extends Controller {
             !name.value.trim() ||
             !description.value.trim()
         ) {
-            this.populateProjectDetail();
-            this.setProjectDetailEditing(false);
-            this.showState(this.STATE_PROJECT_DETAIL);
-            this.showNamedToast("#toast-project-update-error");
+            this.showClientToast("Change failed.Please try again.", false);
             return;
         }
         const previousName = project.name;
@@ -821,11 +899,6 @@ export default class Project extends Controller {
         this.populateProjectDetail();
         this.setProjectDetailEditing(false);
         this.showState(this.STATE_PROJECT_DETAIL);
-        this.showNamedToast(
-            updated
-                ? "#toast-project-update-success"
-                : "#toast-project-update-error",
-        );
     }
     private async deleteCurrentProject(): Promise<void> {
         if (this.currentProject === -1) {
@@ -840,7 +913,6 @@ export default class Project extends Controller {
             {},
         );
         if (deleted) {
-            this.showNamedToast("#toast-project-delete");
         }
     }
     private openDeleteProjectModal(): void {
@@ -852,11 +924,11 @@ export default class Project extends Controller {
         modal.innerHTML = `
             <div class="delete-project-modal" role="dialog" aria-modal="true" aria-labelledby="delete-project-title">
                 <div class="delete-project-modal-header">
-                    <h2 id="delete-project-title">Delete Project</h2>
+                    <h2 id="delete-project-title">Void Project</h2>
                     <button type="button" class="delete-project-close" aria-label="Close">&times;</button>
                 </div>
                 <div class="delete-project-modal-content">
-                    <p>Are you sure you want to delete this project?</p>
+                    <p>Are you sure you want to void this project?</p>
                     <p>This action cannot be undone.</p>
                 </div>
                 <div class="delete-project-modal-footer">
@@ -889,6 +961,12 @@ private renderTasks(): void {
             return;
         }
         if (this.currentProject === -1) {
+            const createTaskButton = this.querySelector<HTMLButtonElement>("#create-task-btn");
+
+            if (createTaskButton) {
+                createTaskButton.hidden = true;
+            }
+
             title.textContent = "Select a Project";
             taskList.innerHTML = `
         <div class="task-empty">
@@ -898,8 +976,26 @@ private renderTasks(): void {
             return;
         }
         const project = this.projects[this.currentProject];
+        const canManage = project.canManage === true;
+        const createTaskButton = this.querySelector<HTMLButtonElement>("#create-task-btn");
+
+        if (createTaskButton) {
+            createTaskButton.hidden = !canManage;
+        }
+
         title.textContent = "Tasks";
         taskList.innerHTML = "";
+
+        if (project.tasks.length === 0) {
+            if (canManage && this.editing && this.editingParentTaskId === null) {
+                this.renderEditingRow(taskList);
+            } else if (!canManage) {
+                taskList.innerHTML = `<div class="task-empty"><p class="body-l">No task available.</p></div>`;
+            }
+
+            return;
+        }
+
         project.tasks.forEach((task) => {
             const row = document.createElement("div");
             row.className = "task-row";
@@ -916,7 +1012,7 @@ private renderTasks(): void {
                         class="member-picker"
                         data-task-id="${task.id}"
                         data-member-id="${task.assigneeId}"
-                        data-value="${task.assigned}">
+                        data-value="${task.assigned}" ${canManage && task.subtasks.length === 0 ? "" : "disabled"}>
                         ${
                             task.subtasks.length > 0
                                 ? "..."
@@ -934,9 +1030,7 @@ private renderTasks(): void {
                             : this.renderPrioritySelect(task)
                     }
                 </div>
-                <div class="action-column">
-                    ⋯
-                </div>
+                <div class="action-column"></div>
             `;
             row.querySelector<HTMLElement>(".status-column")!.innerHTML =
                 task.subtasks.length > 0
@@ -959,7 +1053,8 @@ private renderTasks(): void {
                         ${this.getStatusIcon(task.status)}
                     </button>
                 `;
-            row.querySelector<HTMLElement>(".action-column")!.innerHTML = `
+            if (canManage) {
+                row.querySelector<HTMLElement>(".action-column")!.innerHTML = `
             <button
                 type="button"
                 class="task-delete"
@@ -970,6 +1065,7 @@ private renderTasks(): void {
                 </svg>
             </button>
         `;
+            }
             const completedSubtasks = task.subtasks.filter(
                 (subtask) => subtask.status === "done",
             ).length;
@@ -993,13 +1089,15 @@ private renderTasks(): void {
                 task.subtasks.forEach((subtask) => {
                     this.renderSubtaskRow(taskList, subtask);
                 });
-                if (this.editing && this.editingParentTaskId === task.id) {
+                if (canManage && this.editing && this.editingParentTaskId === task.id) {
                     this.renderEditingRow(taskList);
                 }
             }
-            taskList.appendChild(createSubtask);
+            if (canManage) {
+                taskList.appendChild(createSubtask);
+            }
         });
-        if (this.editing && this.editingParentTaskId === null) {
+        if (canManage && this.editing && this.editingParentTaskId === null) {
             this.renderEditingRow(taskList);
         }
     }
@@ -1019,16 +1117,16 @@ private renderTasks(): void {
             </div>
             <div class="task-name-column body-s">${this.renderEditableName(task)}</div>
             <div class="assigned-column helper-text">
-                <button type="button" class="member-picker" data-task-id="${task.id}" data-member-id="${task.assigneeId}" data-value="${task.assigned}">${task.assigned || "Member"}</button>
+                <button type="button" class="member-picker" data-task-id="${task.id}" data-member-id="${task.assigneeId}" data-value="${task.assigned}" ${this.currentProjectCanManage() ? "" : "disabled"}>${task.assigned || "Member"}</button>
             </div>
             <div class="date-column helper-text">${this.renderEditableDate(task)}</div>
             <div class="priority-column">
                 ${this.renderPrioritySelect(task)}
             </div>
             <div class="action-column">
-                <button type="button" class="task-delete" data-task-id="${task.id}" aria-label="Delete ${task.name}">
+                ${this.currentProjectCanManage() ? `<button type="button" class="task-delete" data-task-id="${task.id}" aria-label="Delete ${task.name}">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2m-8 0 1 14h8l1-14M10 10v6m4-6v6" /></svg>
-                </button>
+                </button>` : ""}
             </div>
         `;
         taskList.appendChild(row);
@@ -1080,12 +1178,29 @@ private renderTasks(): void {
         if (!task) {
             return;
         }
+        if (!this.canUpdateTaskStatus(task)) {
+            this.showClientToast("You do not have access to this action!", false);
+            return;
+        }
         const nextStatus: Record<TaskStatus, TaskStatus> = {
             assigned: "in-progress",
             "in-progress": "done",
-            done: "done",
+            done: "in-progress",
         };
         task.status = nextStatus[task.status];
+        if (isSubtask && task.parentTaskId != null) {
+            const parentTask = this.findTask(task.parentTaskId);
+            if (
+                parentTask &&
+                parentTask.subtasks.length > 0 &&
+                parentTask.subtasks.every(
+                    (subtask) => subtask.status === "done",
+                )
+            ) {
+                parentTask.status = "done";
+                this.persistTaskStatus(parentTask);
+            }
+        }
         const currentProject = this.projects[this.currentProject];
         if (
             currentProject?.tasks.length > 0 &&
@@ -1100,7 +1215,11 @@ private renderTasks(): void {
         }
         this.renderTasks();
         this.renderProjects();
-        this.persistTask(task);
+        this.persistTaskStatus(task);
+    }
+    private canUpdateTaskStatus(task: Task): boolean {
+        return this.currentProjectCanManage()
+            || (task.assigneeId.length > 0 && Number(task.assigneeId) === this.currentUserId);
     }
     private async deleteTask(
         taskId: number,
@@ -1115,7 +1234,6 @@ private renderTasks(): void {
             {},
         );
         if (deleted && !isSubtask) {
-            this.showNamedToast("#toast-task-delete");
         }
     }
     private updateTaskPriority(
@@ -1127,7 +1245,10 @@ private renderTasks(): void {
         if (!task || !["", "Low", "Medium", "High"].includes(priority)) {
             return;
         }
-        task.priority = priority;
+        if (task.parentTaskId == null && priority === "") {
+            return;
+        }
+        task.priority = task.parentTaskId == null ? (priority || "Low") : priority;
         this.persistTask(task);
     }
     private updateTaskField(
@@ -1149,30 +1270,39 @@ private renderTasks(): void {
         this.persistTask(task);
     }
     private renderEditableName(task: Task): string {
-        return `<input class="task-inline-input task-name-input" type="text" maxlength="100" value="${this.escapeAttribute(task.name)}" placeholder="Task Name" data-task-id="${task.id}" aria-label="Edit task name">`;
+        const readonly = this.currentProjectCanManage() ? "" : " readonly";
+
+        return `<input class="task-inline-input task-name-input" type="text" maxlength="100" value="${this.escapeAttribute(task.name)}" placeholder="Task Name" data-task-id="${task.id}" aria-label="Edit task name"${readonly}>`;
     }
     private renderEditableDate(task: Task): string {
-        return `<input class="task-inline-input task-date-input${task.dueDate ? " has-value" : ""}" type="date" value="${this.escapeAttribute(task.dueDate)}" data-task-id="${task.id}" aria-label="Edit due date for ${this.escapeAttribute(task.name)}">`;
+        const disabled = this.currentProjectCanManage() ? "" : " disabled";
+
+        return `<input class="task-inline-input task-date-input${task.dueDate ? " has-value" : ""}" type="date" value="${this.escapeAttribute(task.dueDate)}" data-task-id="${task.id}" aria-label="Edit due date for ${this.escapeAttribute(task.name)}"${disabled}>`;
     }
     private escapeAttribute(value: string): string {
+        return this.escapeHtml(value).replace(/"/g, "&quot;");
+    }
+    private escapeHtml(value: string): string {
         return value
             .replace(/&/g, "&amp;")
-            .replace(/"/g, "&quot;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
     }
     private renderPrioritySelect(task: Task): string {
+        const disabled = this.currentProjectCanManage() ? "" : " disabled";
+        const priority = task.parentTaskId == null ? (task.priority || "Low") : task.priority;
+        const options = task.parentTaskId == null ? ["Low", "Medium", "High"] : ["", "Low", "Medium", "High"];
+
         return `
             <select
-                class="task-priority-select ${task.priority ? task.priority.toLowerCase() : "default"}"
+                class="task-priority-select ${priority ? priority.toLowerCase() : "default"}"
                 data-task-id="${task.id}"
-                aria-label="Priority for ${task.name}">
-                <option value="" ${task.priority === "" ? "selected" : ""}>Priority</option>
-                ${["Low", "Medium", "High"]
+                aria-label="Priority for ${task.name}"${disabled}>
+                ${options
                     .map(
-                        (priority) => `
-                    <option value="${priority}" ${task.priority === priority ? "selected" : ""}>
-                        ${priority}
+                        (option) => `
+                    <option value="${option}" ${priority === option ? "selected" : ""}>
+                        ${option || "None"}
                     </option>
                 `,
                     )
@@ -1180,8 +1310,8 @@ private renderTasks(): void {
             </select>
         `;
     }
-private addTaskRow(parentTaskId: number | null = null): void {
-        if (this.currentProject === -1) {
+    private addTaskRow(parentTaskId: number | null = null): void {
+        if (this.currentProject === -1 || !this.currentProjectCanManage()) {
             return;
         }
         if (this.editing) {
@@ -1339,9 +1469,6 @@ private addTaskRow(parentTaskId: number | null = null): void {
                 if (added && returnToProjectDetail) {
                     this.openProjectDetail();
                     this.setProjectDetailEditing(true);
-                    this.showNamedToast("#toast-member-add-success");
-                } else if (returnToProjectDetail) {
-                    this.showNamedToast("#toast-member-add-error");
                 }
             }
         });
@@ -1377,10 +1504,8 @@ private renderEditingRow(taskList: HTMLElement): void {
             <div class="priority-column">
                 <select
                     id="editing-priority">
-                    <option value="">
-                        Priority
-                    </option>
-                    <option>
+                    ${this.editingParentTaskId === null ? "" : `<option value="">None</option>`}
+                    <option selected>
                         Low
                     </option>
                     <option>
@@ -1413,19 +1538,11 @@ private renderEditingRow(taskList: HTMLElement): void {
     }
     private hasDraftTaskValue(): boolean {
         const name = this.querySelector<HTMLInputElement>("#editing-task-name");
-        const member = this.querySelector<HTMLElement>("#editing-member");
-        const date = this.querySelector<HTMLInputElement>("#editing-date");
-        const priority =
-            this.querySelector<HTMLSelectElement>("#editing-priority");
-        return Boolean(
-            name?.value.trim() ||
-            member?.dataset.value ||
-            date?.value ||
-            priority?.value,
-        );
+
+        return Boolean(name?.value.trim());
     }
-private saveTask(): void {
-        if (this.currentProject === -1) {
+private async saveTask(): Promise<void> {
+        if (this.currentProject === -1 || this.savingTask) {
             return;
         }
         const name = this.querySelector<HTMLInputElement>("#editing-task-name");
@@ -1450,19 +1567,26 @@ private saveTask(): void {
             assignee_id: member.dataset.memberId ?? "",
             title: name.value.trim(),
             due_date: date.value,
-            priority: priority.value.toLowerCase(),
+            priority: parentTask ? priority.value.toLowerCase() : (priority.value || "low").toLowerCase(),
             status: "draft",
         };
+        this.savingTask = true;
+        let saved = false;
         if (parentTask) {
-            this.submitRequest("/subtask", "POST", {
+            saved = await this.submitRequest("/subtask", "POST", {
                 ...fields,
                 task_id: parentTask.id.toString(),
             });
         } else {
-            this.submitRequest("/task", "POST", {
+            saved = await this.submitRequest("/task", "POST", {
                 ...fields,
                 project_id: this.projects[this.currentProject].id.toString(),
             });
+        }
+        this.savingTask = false;
+        if (saved) {
+            this.editing = false;
+            this.editingParentTaskId = null;
         }
     }
 private cancelTask(): void {
@@ -1518,32 +1642,52 @@ private showState(state: string): void {
                 this.querySelector("#state-project-detail")?.classList.add(
                     "active",
                 );
-                this.querySelector(
-                    this.projectDetailEditing
-                        ? "#header-project-edit-actions"
-                        : "#header-project-detail-actions",
-                )?.classList.add("active");
+                if (this.currentProjectCanManage()) {
+                    this.querySelector(
+                        this.projectDetailEditing
+                            ? "#header-project-edit-actions"
+                            : "#header-project-detail-actions",
+                    )?.classList.add("active");
+                }
                 break;
         }
     }
-private showToast(success: boolean): void {
-        this.showNamedToast(success ? "#toast-success" : "#toast-error");
+    private showToast(success: boolean): void {
+        this.showClientToast(
+            success
+                ? "Project Created Successfully!"
+                : "Create Project failed.Please try again.",
+            success,
+        );
     }
-    private showNamedToast(selector: string): void {
-        if (this.toastTimer !== null) {
-            window.clearTimeout(this.toastTimer);
-        }
-        document
-            .querySelectorAll<HTMLElement>(".project-toast.show")
-            .forEach((visibleToast) => visibleToast.classList.remove("show"));
-        const toast = document.querySelector<HTMLElement>(selector);
-        if (!toast) {
+    private showClientToast(message: string, success: boolean): void {
+        document.querySelector<HTMLElement>(".toast-wrapper")?.remove();
+        const toast = document.createElement("div");
+        toast.className = `toast-wrapper ${success ? "is-success" : "is-error"}`;
+        toast.setAttribute("role", success ? "status" : "alert");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
+        const messageElement = document.createElement("span");
+        messageElement.className = "toast-message";
+        messageElement.textContent = message;
+        toast.appendChild(messageElement);
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 3000);
+    }
+    private sharedToastIsError(documentResult: Document): boolean {
+        return documentResult.querySelector(".toast-wrapper.is-error") != null;
+    }
+
+    private showSharedToast(documentResult: Document): void {
+        const toast = documentResult.querySelector<HTMLElement>(".toast-wrapper");
+
+        if (toast == null) {
             return;
         }
-        toast.classList.add("show");
-        this.toastTimer = window.setTimeout(() => {
-            toast.classList.remove("show");
-            this.toastTimer = null;
-        }, 3000);
+
+        document.querySelector<HTMLElement>(".toast-wrapper")?.remove();
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 3000);
     }
 }
+

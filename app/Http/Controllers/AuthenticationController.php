@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
 
 class AuthenticationController extends Controller {
     use ApiResponse, SystemSecurity;
@@ -21,39 +22,46 @@ class AuthenticationController extends Controller {
      * @return RedirectResponse Redirect to the authenticated main page if success.
      */
     public function login(Request $request) {
-        $email = $request->input("email");
         $ip_key = "user_ip|{$request->ip()}";
-        $user_key = "login_user|{$email}|{$request->ip()}";
+        $user_key = "login_user|{$request->input("email")}|{$request->ip()}";
         
-        // Step 01 - Check If Ip Is On Blacklisted.
+        // STEP 01 - CHECK IF IP IS ON BLACKLISTED.
         if ($this->isBlacklisted($request->ip())) {
             return back()
                 ->with("response", $this->errorResponse("Your IP Is Blacklisted."))
-                ->withInput($email);
+                ->with("login_input", $request->only(["email"]));
         }
         
-        // Step 02 - Check If The User Is Attempts Error 5 Times, Throttle It.
+        // STEP 02 - CHECK IF THE USER IS ATTEMPTS ERROR 5 TIMES IN 30 SECONDS, THROTTLE IT.
         if (RateLimiter::tooManyAttempts($user_key, 5)) {
             $seconds = RateLimiter::availableIn($user_key);
             return back()
                 ->with("response", $this->errorResponse("Too Many Login Attempts. Please Try Again In {$seconds} Seconds."))
-                ->withInput($email);
+                ->with("login_input", $request->only(["email"]));
         }
         
-        // Step 03 - Validate The Request Data.
-        $validated = $request->validate([
+        // STEP 03 - VALIDATE THE REQUEST DATA.
+        $validator = Validator::make($request->all(), [
             "email" => "required|string|email",
             "password" => "required|string|min:8",
-            "is_remember" => "required|boolean",
         ]);
+        
+        // IF VALIDATION FAILS, RETURN WITH ERROR MESSAGE.
+        if ($validator->fails()) {
+            return back()
+                ->with("response", $this->errorResponse($validator->errors()->first()))
+                ->with("login_input", $request->only(["email"]));
+        }
+        
+        $validated = $validator->validated();
         
         $credentials = [
             "email" => $validated["email"],
             "password" => $validated["password"]
         ];
         
-        // Step 04 - Authenticate The User Login.
-        if (Auth::attempt($credentials, $validated["is_remember"])) {
+        // STEP 04 - AUTHENTICATE THE USER LOGIN.
+        if (Auth::attempt($credentials)) {
             RateLimiter::clear($user_key);
             RateLimiter::clear($ip_key);
             $request->session()->regenerate();
@@ -62,20 +70,21 @@ class AuthenticationController extends Controller {
                 ->with("response", $this->successResponse("Login Successfully. Welcome Back!"));
         }
         
-        RateLimiter::hit($user_key, 60);
-        RateLimiter::hit($ip_key, 60);
+        RateLimiter::hit($user_key, 30);
+        RateLimiter::hit($ip_key, 120);
         
-        // Step 05 - Check If The Ip Is Attempts Error 30 Times, Apply Blacklist.
-        if (RateLimiter::tooManyAttempts($ip_key, 30)) {
+        // STEP 05 - CHECK IF IP IS ATTEMPTS ERROR 10 TIMES IN 120 SECONDS, APPLY BLACKLIST IT.
+        if (RateLimiter::tooManyAttempts($ip_key, 10)) {
             $this->applyBlacklist();
             return back()
                 ->with("response", $this->errorResponse("Your IP Is Blacklisted."))
-                ->withInput($email);
+                ->with("login_input", $request->only(["email"]));
         }
         
+        // IF LOGIN CREDENTIALS ARE INCORRECT, RETURN WITH ERROR MESSAGE.
         return back()
             ->with("response", $this->errorResponse("Email or Password Is Incorrect."))
-            ->withInput($validated["email"]);
+            ->with("login_input", ["email" => $validated["email"]]);
     }
     
     /**
@@ -85,7 +94,7 @@ class AuthenticationController extends Controller {
      * @return RedirectResponse Redirect to the authenticated main page if success.
      */
     public function register(Request $request) {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             "fullname" => "required|string|max:255",
             "username" => "required|string|max:255",
             "identifier" => "nullable|string|max:255",
@@ -95,10 +104,19 @@ class AuthenticationController extends Controller {
             "contact" => "required|string|unique:users,contact",
         ]);
         
+        if ($validator->fails()) {
+            return redirect()
+                ->route("login")
+                ->with("response", $this->errorResponse($validator->errors()->first()))
+                ->with("register_input", $request->except(["password", "password_confirmation"]))
+                ->with("auth_tab", "sign-up");
+        }
+        
+        $validated = $validator->validated();
+        
         $user = User::create([
             "fullname" => $validated["fullname"],
             "username" => $validated["username"],
-            "identifier" => $validated["identifier"],
             "email" => $validated["email"],
             "password" => Hash::make($validated["password"]),
             "nric" => $validated["nric"],
@@ -111,7 +129,7 @@ class AuthenticationController extends Controller {
         
         return redirect()
             ->route("dashboard")
-            ->with("response", $this->successResponse("Registration Successful!"));
+            ->with("response", $this->successResponse("Sign Up Successful!"));
     }
     
     /**

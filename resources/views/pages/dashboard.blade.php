@@ -4,66 +4,95 @@
 
 @section("contents")
   @php
-    $dashboardColumns = [
-      "in_progress" => [
-        "title" => "In Progress",
-        "empty" => "No in progress task available",
+    $cards = [
+      [
+        "label" => "Owned Projects",
+        "value" => $summary["owned_projects"],
+        "meta" => "Created by you",
+        "icon" => "folder-kanban",
+        "tone" => "primary",
+        "href" => route("project"),
       ],
-      "completed" => [
-        "title" => "Completed",
-        "empty" => "No completed task available",
+      [
+        "label" => "Member Projects",
+        "value" => $summary["joined_projects"],
+        "meta" => "Shared or assigned to you",
+        "icon" => "users",
+        "tone" => "neutral",
+        "href" => route("project"),
       ],
-      "overdue" => [
-        "title" => "Overdue",
-        "empty" => "No overdue task available",
+      [
+        "label" => "Completed Projects",
+        "value" => $summary["completed_projects"],
+        "meta" => "Open Project page",
+        "icon" => "circle-check-big",
+        "tone" => "success",
+        "href" => route("project"),
       ],
+      [
+        "label" => "In Progress Projects",
+        "value" => $summary["progressed_projects"],
+        "meta" => "Open Project page",
+        "icon" => "activity",
+        "tone" => "warning",
+        "href" => route("project"),
+      ]
     ];
   @endphp
   
   <div id="dashboard-wrapper">
-    <section class="dashboard-content">
-      <header class="dashboard-header">
-        <h1 class="heading-01">Task List</h1>
-      </header>
-      
-      <section class="task-list" aria-label="Dashboard task status columns">
-        @foreach ($dashboardColumns as $column => $columnConfig)
-          @php
-            $columnItems = collect($tasks[$column] ?? []);
-          @endphp
-          
-          <section class="task-column {{ $column === "overdue" ? "task-column--system" : "" }}" data-column="{{ $column }}">
-            <header class="task-column-header">
-              <h2 class="heading-04">{{ $columnConfig["title"] }}</h2>
-              <span class="task-count" data-count-for="{{ $column }}">{{ $columnItems->count() }}</span>
-            </header>
-            
-            <div class="task-card-container" data-card-container="{{ $column }}" @if ($columnItems->isEmpty()) hidden @endif>
-              @foreach ($columnItems as $item)
-                @php
-                  $priority = $item["priority"] ?? "medium";
-                  $updateUrl = $item["type"] === "subtask" ? route("subtask.update", ["id" => $item["id"]]) : route("task.update", ["id" => $item["id"]]);
-                @endphp
-                
-                <article class="task-card" draggable="true" data-item-id="{{ $item["id"] }}" data-item-type="{{ $item["type"] }}" data-current-status="{{ $column }}" data-original-status="{{ $column }}" data-task-status="{{ $item["status"] }}" data-title="{{ $item["title"] }}" data-assignee-id="{{ $item["assignee_id"] }}" data-due-date="{{ $item["due_date"]?->toDateString() }}" data-priority="{{ $priority }}" data-update-url="{{ $updateUrl }}">
-                  <span class="task-status-indicator task-status-indicator--{{ $column }}"></span>
-                  
-                  <div class="task-card-content">
-                    <div class="task-card-meta">
-                    <p class="body-s">{{ $item["title"] }}</p>
-                  </div>
-                  
-                  <span class="priority-badge priority-badge--{{ $priority }}">{{ ucfirst($priority) }}</span>
-                </article>
-              @endforeach
+    <header class="page-header dashboard-header">
+      <div>
+        <h1 class="heading-02">Dashboard</h1>
+      </div>
+    </header>
+    
+    <div class="dashboard-content">
+      <div class="analysis-card-container">
+        @foreach ($cards as $card)
+          <a class="analysis-card card-{{ $card["tone"] }}" href="{{ $card["href"] }}">
+            <div class="card-icon">
+              <x-dynamic-component :component="'lucide-'.$card['icon']" />
             </div>
-            
-            <div class="empty-state body-L" data-empty-state="{{ $column }}" @if ($columnItems->isNotEmpty()) hidden @endif>{{ $columnConfig["empty"] }}</div>
-          </section>
+            <span class="card-summary">{{ $card["label"] }}</span>
+            <strong class="card-value">{{ $card["value"] }}</strong>
+            <span class="card-meta">{{ $card["meta"] }}</span>
+          </a>
         @endforeach
-      </section>
+      </div>
       
-      <section class="dashboard-future-content" aria-label="Future dashboard content"></section>
-    </section>
+      <div class="analysis-graph-panel-container">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2 class="heading-04">Project Task Tracker</h2>
+            <p class="body-s">Track member project contribution value</p>
+          </div>
+          
+          <div class="panel-tool">
+            <div class="filter">
+              <label class="label-m" for="project-selector">Project</label>
+              <select id="project-selector">
+                @forelse ($analysis as $detail)
+                  <option value="{{ $detail["project_id"] }}">{{ $detail["project_name"] }}</option>
+                @empty
+                  <option value="">No projects available</option>
+                @endforelse
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-content">
+          <div id="graph-container" aria-live="polite"></div>
+          <div class="graph-empty-state">
+            <x-dynamic-component class="graph-empty-icon" :component="'lucide-chart-bar-stacked'" />
+            <p class="graph-empty heading-01">No Data Available</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script id="dashboard-analysis-data" type="application/json">@json($analysis)</script>
   </div>
 @endsection
+
