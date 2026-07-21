@@ -11,8 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class MemberController extends Controller
-{
+class MemberController extends Controller {
     use ApiResponse;
 
     /**
@@ -21,8 +20,7 @@ class MemberController extends Controller
      * @param Request $request The Request Object.
      * @return RedirectResponse The Redirect Response To The Project View Page.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $validated = $request->validate([
             "email" => "required|string|email|max:255",
             "project_id" => "required|integer|exists:projects,id",
@@ -67,8 +65,7 @@ class MemberController extends Controller
      * @param string $id The Member ID.
      * @return RedirectResponse The Redirect Response To The Project View Page.
      */
-    public function destroy(string $id)
-    {
+    public function destroy(string $id) {
         $member = Member::with("project")->findOrFail($id);
         $project = $member->project;
         $creator_id = $project->creator_id;
