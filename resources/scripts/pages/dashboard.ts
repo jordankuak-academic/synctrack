@@ -30,12 +30,35 @@ export default class DashboardController extends Controller {
 
   private renderSelectedProjectGraph(): void {
     const selector = this.querySelector<HTMLSelectElement>("[data-project-stat-select]");
-    const selectedProjectId = this.normalizeProjectId(selector?.selectedOptions.item(0)?.value ?? selector?.value ?? this.projectStats[0]?.project_id ?? "");
-    const project = this.projectStats.find((item) => item.project_id === selectedProjectId) ?? this.projectStats[0] ?? null;
+    const selectedOption = selector?.selectedOptions.item(0) ?? null;
+    const selectedProjectId = this.normalizeProjectId(selectedOption?.value ?? selector?.value ?? this.projectStats[0]?.project_id ?? "");
+    const project = this.projectStats.find((item) => item.project_id === selectedProjectId)
+      ?? this.getProjectStatFromOption(selectedOption, selectedProjectId)
+      ?? null;
 
     this.renderLineGraph(project);
   }
+  private getProjectStatFromOption(option: HTMLOptionElement | null, projectId: string): ProjectTaskStat | null {
+    if (option == null || option.dataset.members == null) {
+      return null;
+    }
 
+    try {
+      const parsed: unknown = JSON.parse(option.dataset.members);
+      const members = this.normalizeMembers(parsed);
+
+      return {
+        project_id: projectId,
+        project_name: option.textContent?.trim() ?? "Untitled project",
+        total_tasks: members.reduce((total, member) => total + member.task_count, 0),
+        completed_tasks: 0,
+        members,
+      };
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
   private renderLineGraph(project: ProjectTaskStat | null): void {
     const graphShell = this.querySelector<HTMLElement>(".graph-shell");
     const graph = this.querySelector<HTMLElement>("[data-member-task-graph]");
@@ -108,6 +131,16 @@ export default class DashboardController extends Controller {
       label.textContent = String(value);
       svg.appendChild(label);
     }
+
+    const yAxisTitle = this.svgElement("text", {
+      x: "16",
+      y: String(padding.top + chartHeight / 2),
+      class: "graph-axis-title",
+      "text-anchor": "middle",
+      transform: `rotate(-90 16 ${padding.top + chartHeight / 2})`,
+    });
+    yAxisTitle.textContent = "Tasks";
+    svg.appendChild(yAxisTitle);
 
     svg.appendChild(this.svgElement("polyline", {
       points: points.map((point) => `${point.x},${point.y}`).join(" "),
@@ -185,17 +218,23 @@ export default class DashboardController extends Controller {
       project_name: String(project.project_name ?? "Untitled project"),
       total_tasks: Number(project.total_tasks ?? 0),
       completed_tasks: Number(project.completed_tasks ?? 0),
-      members: members.map((member) => {
-        const row = member as Record<string, unknown>;
-
-        return {
-          name: String(row.name ?? "Unassigned"),
-          task_count: Number(row.task_count ?? 0),
-        };
-      }),
+      members: this.normalizeMembers(members),
     };
   }
+  private normalizeMembers(value: unknown): MemberTaskStat[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
 
+    return value.map((member) => {
+      const row = member as Record<string, unknown>;
+
+      return {
+        name: String(row.name ?? "Unassigned"),
+        task_count: Number(row.task_count ?? 0),
+      };
+    });
+  }
   private normalizeProjectId(value: unknown): string {
     return String(value ?? "").trim();
   }

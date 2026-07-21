@@ -117,7 +117,6 @@ class AuthenticationController extends Controller {
         $user = User::create([
             "fullname" => $validated["fullname"],
             "username" => $validated["username"],
-            "identifier" => $validated["identifier"],
             "email" => $validated["email"],
             "password" => Hash::make($validated["password"]),
             "nric" => $validated["nric"],
@@ -130,7 +129,7 @@ class AuthenticationController extends Controller {
         
         return redirect()
             ->route("dashboard")
-            ->with("response", $this->successResponse("Registration Successful!"));
+            ->with("response", $this->successResponse("Sign Up Successful!"));
     }
     
     /**

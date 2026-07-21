@@ -11,19 +11,23 @@ class DashboardController extends Controller {
     public function index(): View {
         $currentUser = Auth::user();
 
-        $projects = Project::with([
+        $projectQuery = Project::with([
             "creator",
             "members.user",
             "tasks.assignee",
             "tasks.subTasks.assignee",
-        ])
-            ->where(function($query) use ($currentUser) {
+        ]);
+
+        if (!$this->userIsAdmin($currentUser)) {
+            $projectQuery->where(function($query) use ($currentUser) {
                 $query->where("creator_id", $currentUser->id)
                     ->orWhereHas("members", fn($query) => $query->where("user_id", $currentUser->id))
                     ->orWhereHas("tasks", fn($query) => $query->where("assignee_id", $currentUser->id))
                     ->orWhereHas("tasks.subTasks", fn($query) => $query->where("assignee_id", $currentUser->id));
-            })
-            ->get();
+            });
+        }
+
+        $projects = $projectQuery->get();
 
         $summary = $this->buildProjectSummary($projects, $currentUser->id);
         $projectMemberTaskStats = $this->buildProjectMemberTaskStats($projects);
@@ -78,13 +82,29 @@ class DashboardController extends Controller {
                     ->unique("id")
                     ->values();
 
-                $assignedTaskCounts = $project->tasks
+                $assignedParentTaskCounts = $project->tasks
                     ->filter(fn($task) => $task->assignee_id !== null && $task->assignee !== null)
                     ->groupBy("assignee_id")
                     ->map(fn($tasks) => $tasks->count());
+                $assignedSubTaskCounts = $project->tasks
+                    ->flatMap(fn($task) => $task->subTasks)
+                    ->filter(fn($subTask) => $subTask->assignee_id !== null && $subTask->assignee !== null)
+                    ->groupBy("assignee_id")
+                    ->map(fn($subTasks) => $subTasks->count());
+                $assignedTaskCounts = $assignedParentTaskCounts
+                    ->keys()
+                    ->merge($assignedSubTaskCounts->keys())
+                    ->unique()
+                    ->mapWithKeys(fn($assigneeId) => [
+                        $assigneeId => $assignedParentTaskCounts->get($assigneeId, 0) + $assignedSubTaskCounts->get($assigneeId, 0),
+                    ]);
                 $unassignedTaskCount = $project->tasks
                     ->filter(fn($task) => $task->assignee_id === null || $task->assignee === null)
-                    ->count();
+                    ->count()
+                    + $project->tasks
+                        ->flatMap(fn($task) => $task->subTasks)
+                        ->filter(fn($subTask) => $subTask->assignee_id === null || $subTask->assignee === null)
+                        ->count();
 
                 return [
                     "project_id" => $project->id,
