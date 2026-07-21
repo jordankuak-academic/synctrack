@@ -53,6 +53,8 @@ class DashboardController extends Controller {
     private function buildProjectMemberTaskStats(Collection $projects): array {
         return $projects
             ->map(function($project) {
+                $parentTasks = $project->tasks;
+                $subTasks = $project->tasks->flatMap(fn($task) => $task->subTasks);
                 $members = collect([
                     [
                         "id" => $project->creator?->id,
@@ -65,14 +67,13 @@ class DashboardController extends Controller {
                             "id" => $member->user_id,
                             "name" => $member->user->username,
                         ]))
-                    ->merge($project->tasks
+                    ->merge($parentTasks
                         ->filter(fn($task) => $task->assignee !== null)
                         ->map(fn($task) => [
                             "id" => $task->assignee_id,
                             "name" => $task->assignee->username,
                         ]))
-                    ->merge($project->tasks
-                        ->flatMap(fn($task) => $task->subTasks)
+                    ->merge($subTasks
                         ->filter(fn($subTask) => $subTask->assignee !== null)
                         ->map(fn($subTask) => [
                             "id" => $subTask->assignee_id,
@@ -82,50 +83,58 @@ class DashboardController extends Controller {
                     ->unique("id")
                     ->values();
 
-                $assignedParentTaskCounts = $project->tasks
-                    ->filter(fn($task) => $task->assignee_id !== null && $task->assignee !== null)
-                    ->groupBy("assignee_id")
-                    ->map(fn($tasks) => $tasks->count());
-                $assignedSubTaskCounts = $project->tasks
-                    ->flatMap(fn($task) => $task->subTasks)
-                    ->filter(fn($subTask) => $subTask->assignee_id !== null && $subTask->assignee !== null)
-                    ->groupBy("assignee_id")
-                    ->map(fn($subTasks) => $subTasks->count());
-                $assignedTaskCounts = $assignedParentTaskCounts
-                    ->keys()
-                    ->merge($assignedSubTaskCounts->keys())
-                    ->unique()
-                    ->mapWithKeys(fn($assigneeId) => [
-                        $assigneeId => $assignedParentTaskCounts->get($assigneeId, 0) + $assignedSubTaskCounts->get($assigneeId, 0),
-                    ]);
-                $unassignedTaskCount = $project->tasks
+                $memberStats = $members->map(function($member) use ($parentTasks, $subTasks) {
+                    $tasks = $parentTasks
+                        ->filter(fn($task) => (int) $task->assignee_id === (int) $member["id"] && $task->assignee !== null)
+                        ->map(fn($task) => $this->formatDashboardTask($task, "task"))
+                        ->merge($subTasks
+                            ->filter(fn($subTask) => (int) $subTask->assignee_id === (int) $member["id"] && $subTask->assignee !== null)
+                            ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
+                        ->values();
+
+                    return [
+                        "member_id" => $member["id"],
+                        "name" => $member["name"],
+                        "task_count" => $tasks->count(),
+                        "tasks" => $tasks->all(),
+                    ];
+                });
+
+                $unassignedTasks = $parentTasks
                     ->filter(fn($task) => $task->assignee_id === null || $task->assignee === null)
-                    ->count()
-                    + $project->tasks
-                        ->flatMap(fn($task) => $task->subTasks)
+                    ->map(fn($task) => $this->formatDashboardTask($task, "task"))
+                    ->merge($subTasks
                         ->filter(fn($subTask) => $subTask->assignee_id === null || $subTask->assignee === null)
-                        ->count();
+                        ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
+                    ->values();
+
+                if ($unassignedTasks->isNotEmpty()) {
+                    $memberStats->push([
+                        "member_id" => null,
+                        "name" => "Unassigned",
+                        "task_count" => $unassignedTasks->count(),
+                        "tasks" => $unassignedTasks->all(),
+                    ]);
+                }
 
                 return [
                     "project_id" => $project->id,
                     "project_name" => $project->title,
-                    "total_tasks" => $project->tasks->count(),
-                    "completed_tasks" => $project->tasks->where("status", "completed")->count(),
-                    "members" => $members
-                        ->map(fn($member) => [
-                            "name" => $member["name"],
-                            "task_count" => $assignedTaskCounts->get($member["id"], 0),
-                        ])
-                        ->when($unassignedTaskCount > 0, fn($members) => $members->push([
-                            "name" => "Unassigned",
-                            "task_count" => $unassignedTaskCount,
-                        ]))
-                        ->values()
-                        ->all(),
+                    "total_tasks" => $parentTasks->count() + $subTasks->count(),
+                    "completed_tasks" => $parentTasks->where("status", "completed")->count() + $subTasks->where("status", "completed")->count(),
+                    "members" => $memberStats->values()->all(),
                 ];
             })
             ->values()
             ->all();
+    }
+
+    private function formatDashboardTask($task, string $type): array {
+        return [
+            "task_id" => $task->id,
+            "task_type" => $type,
+            "date" => $task->due_date?->toDateString(),
+        ];
     }
 
     private function isProjectCompleted($project): bool {
