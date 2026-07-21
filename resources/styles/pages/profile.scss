@@ -226,11 +226,12 @@
         height: 20px;
         grid-area: 1 / 1;
     }
-    .password-input > button .icon-eye-off,
-    .password-input > button.is-visible .icon-eye {
+    .password-input > button .icon-eye,
+    .password-input > button.is-visible .icon-eye-off {
         display: none;
     }
-    .password-input > button.is-visible .icon-eye-off {
+    .password-input > button .icon-eye-off,
+    .password-input > button.is-visible .icon-eye {
         display: block;
     }
     .profile-notification {
@@ -307,3 +308,4 @@
         }
     }
 }
+

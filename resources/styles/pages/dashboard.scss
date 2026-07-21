@@ -1,16 +1,16 @@
 @use "../abstracts/variables" as *;
 @use "../abstracts/mixins" as *;
 
-$panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
+$panel-shadow: 0 8px 8px rgba(17, 19, 26, 0.08);
 
 #dashboard-wrapper {
   height: 100%;
   max-height: 100%;
   min-height: 0;
-  padding:16px;
+  padding: 14px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 16px;
+  gap: 20px;
   overflow: hidden;
   color: $neutral-900;
   font-family: $font-family;
@@ -25,13 +25,12 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .dashboard-content {
-    height: 100%;
     min-height: 0;
     display: grid;
     grid-auto-rows: max-content;
-    gap: 16px;
-    overflow-y: auto;
-    padding-right: 4px;
+    gap: 12px;
+    align-content: start;
+    overflow: hidden;
   }
 
   .dashboard-summary-grid,
@@ -39,7 +38,7 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   .status-summary-list,
   .project-ratio-list {
     display: grid;
-    gap: 16px;
+    gap: 12px;
   }
 
   .dashboard-summary-grid {
@@ -61,12 +60,12 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .dashboard-summary-card {
-    min-height: 132px;
+    min-height: 96px;
     display: grid;
-    grid-template-columns: 46px minmax(0, 1fr);
-    gap: 8px 14px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 6px 12px;
     align-items: center;
-    padding: 18px;
+    padding: 14px;
     color: inherit;
     text-decoration: none;
   }
@@ -77,8 +76,8 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .summary-icon {
-    width: 46px;
-    height: 46px;
+    width: 38px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -89,8 +88,8 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .summary-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 
   .dashboard-summary-card--success .summary-icon {
@@ -112,7 +111,7 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   .summary-meta,
   .project-ratio-list span,
   .status-summary-card span,
-  .project-select-field span {
+  .graph-control-field span {
     color: $neutral-500;
     font-size: 12px;
     font-weight: 700;
@@ -124,13 +123,14 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
 
   .summary-value {
     color: $neutral-900;
-    font-size: 32px;
+    font-size: 28px;
     line-height: 1;
   }
 
   .dashboard-panel {
     min-width: 0;
-    padding: 18px;
+    min-height: 0;
+    padding: 14px;
   }
 
   .panel-heading,
@@ -138,8 +138,12 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .panel-heading h2 {
+    margin: 0;
   }
 
   .panel-heading p {
@@ -189,45 +193,64 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .graph-panel {
-    min-height: 430px;
-  }
-
-  .project-select-field {
-    min-width: min(320px, 100%);
     display: grid;
-    gap: 6px;
+    grid-template-rows: auto auto;
+    align-content: start;
+    min-height: 0;
+    overflow: hidden;
   }
 
-  .project-select-field select {
+  .graph-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: flex-end;
+  }
+
+  .graph-control-field[hidden] {
+    display: none;
+  }
+
+  .graph-control-field {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+  }
+
+  .graph-control-field select,
+  .graph-control-field input {
     width: 100%;
-    min-height: 40px;
-    padding: 0 12px;
+    min-height: 36px;
+    padding: 0 10px;
     border: 1px solid $neutral-200;
     border-radius: 8px;
     background: $base-white;
     color: $neutral-900;
     font-family: $font-family;
+    box-sizing: border-box;
   }
 
-  .project-select-field select:disabled {
+  .graph-control-field select:disabled,
+  .graph-control-field input:disabled {
     background: $neutral-100;
     color: $neutral-400;
   }
 
   .graph-shell {
-    min-height: 330px;
     display: grid;
     place-items: center;
     border: 1px solid $neutral-100;
     border-radius: 8px;
     background: $background-100;
-    overflow-x: auto;
+    overflow: hidden;
   }
 
   .line-graph {
     width: 100%;
-    min-width: 680px;
-    padding: 12px;
+    height: 100%;
+    max-height: 400px;
+    padding: 10px 12px;
+    box-sizing: border-box;
   }
 
   .graph-shell.is-empty .line-graph {
@@ -240,7 +263,7 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
 
   .member-task-svg {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
   }
 
@@ -254,32 +277,31 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
     stroke: $primary-500;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 4;
+    stroke-width: 1;
   }
 
   .graph-point {
     fill: $base-white;
-    stroke: $primary-700;
-    stroke-width: 3;
+    stroke: $primary-100;
+    stroke-width: 1;
   }
 
   .graph-axis-label,
   .graph-axis-title,
   .graph-member-label,
   .graph-value-label {
-    fill: $neutral-600;
+    fill: $neutral-400;
     font-family: $font-family;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
   }
 
   .graph-axis-title {
-    fill: $neutral-500;
-    font-weight: 600;
+    fill: $neutral-400;
   }
 
   .graph-value-label {
-    fill: $neutral-900;
+    fill: $neutral-500;
   }
 
   .graph-empty {
@@ -298,23 +320,37 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
     .dashboard-overview-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .graph-heading {
+      display: grid;
+    }
+
+    .graph-controls {
+      width: 100%;
+    }
   }
 
   @media (max-width: 760px) {
     .dashboard-summary-grid,
     .dashboard-overview-grid,
     .project-ratio-list,
-    .status-summary-list {
+    .status-summary-list,
+    .graph-controls {
       grid-template-columns: 1fr;
     }
 
-    .panel-heading,
-    .graph-heading {
-      display: grid;
+    .dashboard-content {
+      overflow: auto;
     }
 
-    .line-graph {
-      min-width: 560px;
+    .graph-shell {
+      height: 260px;
+      max-height: 260px;
     }
   }
 }
+
+
+
+
+

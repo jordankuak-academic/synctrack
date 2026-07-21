@@ -73,19 +73,42 @@
         <div class="panel-heading graph-heading">
           <div>
             <h2 id="member-task-graph-title" class="heading-04">Member Task Count</h2>
-            <p class="body-s">Line graph showing task and subtask assignments for the selected project.</p>
+            <p class="body-s">Task and subtask assignments by member based on due date.</p>
           </div>
 
-          <label class="project-select-field" for="dashboard-project-select">
-            <span>Project</span>
-            <select id="dashboard-project-select" data-project-stat-select @disabled(empty($projectMemberTaskStats))>
-              @forelse ($projectMemberTaskStats as $project)
-                <option value="{{ $project["project_id"] }}" data-members='@json($project["members"], JSON_HEX_APOS)'>{{ $project["project_name"] }}</option>
-              @empty
-                <option>No project available</option>
-              @endforelse
-            </select>
-          </label>
+          <div class="graph-controls" aria-label="Member task count filters">
+            <label class="graph-control-field" for="dashboard-project-select">
+              <span>Project</span>
+              <select id="dashboard-project-select" data-project-stat-select @disabled(empty($projectMemberTaskStats))>
+                @forelse ($projectMemberTaskStats as $project)
+                  <option value="{{ $project["project_id"] }}" data-members='@json($project["members"], JSON_HEX_APOS)'>{{ $project["project_name"] }}</option>
+                @empty
+                  <option>No project available</option>
+                @endforelse
+              </select>
+            </label>
+
+            <label class="graph-control-field" for="dashboard-date-filter">
+              <span>Date Filter</span>
+              <select id="dashboard-date-filter" data-date-filter>
+                <option value="month" selected>This Month</option>
+                <option value="week">This Week</option>
+                <option value="today">Today</option>
+                <option value="range">Specific Range</option>
+              </select>
+            </label>
+
+
+            <label class="graph-control-field date-input-field" data-range-start-field hidden for="dashboard-start-date">
+              <span>Start Date</span>
+              <input id="dashboard-start-date" type="date" data-start-date>
+            </label>
+
+            <label class="graph-control-field date-input-field" data-range-end-field hidden for="dashboard-end-date">
+              <span>End Date</span>
+              <input id="dashboard-end-date" type="date" data-end-date>
+            </label>
+          </div>
         </div>
 
         <div class="graph-shell">
@@ -98,3 +121,4 @@
     <script id="dashboard-project-task-stats" type="application/json">@json($projectMemberTaskStats)</script>
   </div>
 @endsection
+
