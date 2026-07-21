@@ -43,7 +43,7 @@
   <div id="dashboard-wrapper">
     <header class="page-header dashboard-header">
       <div>
-        <h1 class="heading-01">Dashboard</h1>
+        <h1 class="heading-02">Dashboard</h1>
       </div>
     </header>
 

@@ -9,7 +9,7 @@
   <div id="profile-wrapper" data-initial-mode="{{ $initialMode }}">
     <div class="profile-content">
       <header class="page-header profile-header">
-        <h1 class="heading-01">Profile Page</h1>
+        <h1 class="heading-02">Profile</h1>
         <div class="profile-actions">
           <button class="profile-button profile-button--primary" type="button" data-action="edit">Edit</button>
           <a class="profile-button profile-button--secondary" href="{{ route('profile.show') }}" data-edit-back hidden>Back</a>
