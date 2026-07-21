@@ -53,8 +53,8 @@ class DashboardController extends Controller {
     private function buildProjectMemberTaskStats(Collection $projects): array {
         return $projects
             ->map(function($project) {
-                $parentTasks = $project->tasks;
                 $subTasks = $project->tasks->flatMap(fn($task) => $task->subTasks);
+                $parentTasks = $project->tasks->filter(fn($task) => $task->subTasks->isEmpty());
                 $members = collect([
                     [
                         "id" => $project->creator?->id,
@@ -86,9 +86,11 @@ class DashboardController extends Controller {
                 $memberStats = $members->map(function($member) use ($parentTasks, $subTasks) {
                     $tasks = $parentTasks
                         ->filter(fn($task) => (int) $task->assignee_id === (int) $member["id"] && $task->assignee !== null)
+                        ->toBase()
                         ->map(fn($task) => $this->formatDashboardTask($task, "task"))
                         ->merge($subTasks
                             ->filter(fn($subTask) => (int) $subTask->assignee_id === (int) $member["id"] && $subTask->assignee !== null)
+                            ->toBase()
                             ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
                         ->values();
 
@@ -102,9 +104,11 @@ class DashboardController extends Controller {
 
                 $unassignedTasks = $parentTasks
                     ->filter(fn($task) => $task->assignee_id === null || $task->assignee === null)
+                    ->toBase()
                     ->map(fn($task) => $this->formatDashboardTask($task, "task"))
                     ->merge($subTasks
                         ->filter(fn($subTask) => $subTask->assignee_id === null || $subTask->assignee === null)
+                        ->toBase()
                         ->map(fn($subTask) => $this->formatDashboardTask($subTask, "subtask")))
                     ->values();
 
@@ -133,7 +137,7 @@ class DashboardController extends Controller {
         return [
             "task_id" => $task->id,
             "task_type" => $type,
-            "date" => $task->due_date?->toDateString(),
+            "date" => $task->created_at?->toDateString(),
         ];
     }
 
@@ -142,3 +146,5 @@ class DashboardController extends Controller {
             && $project->tasks->every(fn($task) => $task->status === "completed" && $task->subTasks->every(fn($subTask) => $subTask->status === "completed"));
     }
 }
+
+
