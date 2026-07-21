@@ -57,7 +57,9 @@
             <div class="task-card-container" data-card-container="{{ $column }}" @if ($columnItems->isEmpty()) hidden @endif>
               @foreach ($columnItems as $item)
                 @php
-                  $priority = $item["priority"] ?? "medium";
+                  $priority = $item["priority"] ?? "";
+                  $priorityClass = $priority !== "" ? $priority : "none";
+                  $priorityLabel = $priority !== "" ? ucfirst($priority) : "None";
                   $updateUrl = $item["updateUrl"];
                 @endphp
                 
@@ -98,7 +100,7 @@
                       <p class="task-parent">{{ $item["parent_title"] }}</p>
                     @endif
                   </div>
-                  <span class="priority-badge priority-badge--{{ $priority }}">{{ ucfirst($priority) }}</span>
+                  <span class="priority-badge priority-badge--{{ $priorityClass }}">{{ $priorityLabel }}</span>
                 </article>
               @endforeach
             </div>
@@ -152,14 +154,16 @@
                 <div class="calendar-task-list">
                   @foreach ($dayTasks as $item)
                     @php
-                      $priority = $item["priority"] ?? "medium";
+                      $priority = $item["priority"] ?? "";
+                  $priorityClass = $priority !== "" ? $priority : "none";
+                  $priorityLabel = $priority !== "" ? ucfirst($priority) : "None";
                       $taskDate = $item["dueDate"] ?? $item["createdDate"];
                       $displayStatus = $item["status"] === "completed" ? "completed" : (($item["dueDate"] ?? null) !== null && $item["dueDate"] < $todayDate ? "overdue" : "in_progress");
                     @endphp
                     
                     <button
                       type="button"
-                      class="calendar-task calendar-task--{{ $displayStatus }} calendar-task--priority-{{ $priority }}"
+                      class="calendar-task calendar-task--{{ $displayStatus }} calendar-task--priority-{{ $priorityClass }}"
                       data-calendar-task
                       data-task-key="{{ $item["type"] }}-{{ $item["id"] }}"
                       data-item-id="{{ $item["id"] }}"

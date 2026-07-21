@@ -90,8 +90,8 @@
                   </div>
                   
                   <div class="form-group">
-                    <label for="confirm-password" class="heading-04">Confirm Password</label>
-                    <input id="sign-up-confirm-password" type="password" name="confirm-password" class="confirm-password-input" placeholder="**********" required>
+                    <label for="password_confirmation" class="heading-04">Confirm Password</label>
+                    <input id="password_confirmation" type="password" name="password_confirmation" class="confirm-password-input" placeholder="**********" required>
                     <button type="button" id="sign-up-confirm-password-toggle" class="password-toggle-btn" aria-label="Show password" aria-pressed="false">
                       <x-dynamic-component class="toggle-icon icon-eye" :component="'lucide-eye'" />
                       <x-dynamic-component class="toggle-icon icon-eye-off" :component="'lucide-eye-off'" />

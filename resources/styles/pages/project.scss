@@ -296,6 +296,16 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .project-owner-label {
+        flex-shrink: 0;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: $background-900;
+        color: $neutral-500;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
     .project-item .more {
         font-size: 18px;
         color: $neutral-400;
@@ -732,7 +742,7 @@
         color: $neutral-900;
     }
     .subtask-row .task-name-column {
-        padding-left: 0;
+        padding-left: 28px;
     }
     .create-subtask-btn {
         display: flex;
@@ -740,11 +750,11 @@
         gap: 10px;
         width: 100%;
         min-height: 48px;
-        padding: 0 20px 0 120px;
+        padding: 0 20px 0 148px;
         border: none;
         border-bottom: 1px solid $neutral-100;
         background: $base-white;
-        color: $neutral-300;
+        color: $neutral-500;
         cursor: pointer;
         font-size: 14px;
         text-align: left;
@@ -753,13 +763,14 @@
         display: none;
     }
     .task-row:not(.subtask-row):hover + .hover-subtask-btn,
+    .subtask-row:hover + .hover-subtask-btn,
     .hover-subtask-btn:hover {
         display: flex;
     }
     .create-subtask-btn span:first-child {
         font-size: 22px;
         line-height: 1;
-        color: $primary-500;
+        color: $neutral-500;
     }
     .status-column {
         display: flex;
@@ -827,6 +838,14 @@
         border-radius: 8px;
         color: $neutral-500;
         font-size: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .task-row:hover .task-delete,
+    .task-delete:focus-visible {
+        opacity: 1;
+        pointer-events: auto;
     }
     .task-delete:hover {
         background: transparent;
@@ -1183,6 +1202,10 @@
         background: $danger-background;
         color: $danger-700;
     }
+    .priority-badge.default {
+        background: $neutral-200;
+        color: $neutral-700;
+    }
     .task-priority-select {
         width: 104px;
         height: 32px;
@@ -1209,8 +1232,11 @@
         text-align: left;
     }
     .task-priority-select.default {
-        background-color: transparent;
-        color: $neutral-500;
+        background-color: $neutral-200;
+        color: $neutral-700;
+        padding: 0 10px;
+        text-align: center;
+        text-align-last: center;
     }
     .task-priority-select.low {
         background-color: $success-background;
@@ -1236,6 +1262,9 @@
     .task-priority-select:focus-visible {
         outline: 2px solid $primary-500;
         outline-offset: 2px;
+    }
+    .create-task-button[hidden] {
+        display: none;
     }
     .create-task-button {
         display: flex;
@@ -1306,3 +1335,6 @@
         }
     }
 }
+
+
+

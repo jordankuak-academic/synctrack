@@ -454,7 +454,7 @@ export default class BoardController extends Controller {
         const taskDate = this.getCalendarTaskDate(task);
 
         button.type = "button";
-        button.className = `calendar-task calendar-task--${status} calendar-task--priority-${task.priority}`;
+        button.className = `calendar-task calendar-task--${status} calendar-task--priority-${this.priorityClass(task.priority)}`;
         button.dataset.calendarTask = "";
         button.dataset.taskKey = this.getTaskKey(task);
         button.dataset.itemId = String(task.id);
@@ -850,7 +850,7 @@ export default class BoardController extends Controller {
             createdDate: this.toDateString(task.createdDate ?? task.created_at),
             dueDate: this.toDateString(task.dueDate ?? task.due_date),
             status,
-            priority: String(task.priority ?? "medium"),
+            priority: String(task.priority ?? ""),
             assignee_id: this.toNullableString(task.assignee_id),
             updateUrl: String(task.updateUrl ?? task.update_url ?? `/${type}/${id}`),
         };
@@ -1008,10 +1008,14 @@ export default class BoardController extends Controller {
 
     private formatPriority(priority: string): string {
         if (priority.length === 0) {
-            return "Medium";
+            return "None";
         }
 
         return priority.charAt(0).toUpperCase() + priority.slice(1);
+    }
+
+    private priorityClass(priority: string): string {
+        return priority.length === 0 ? "none" : priority;
     }
 
     private clearAllDropStates(): void {

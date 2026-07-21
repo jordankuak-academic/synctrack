@@ -30,27 +30,28 @@
         <div class="profile-grid">
           <section class="profile-card" aria-labelledby="login-info-title">
             <h2 id="login-info-title" class="heading-04">Login Info</h2>
-            <div class="profile-field">
-              <label for="username">Username</label>
-              <div class="profile-value" data-view-value="username">{{ $user->username }}</div>
-              <input id="username" name="username" type="text" value="{{ old('username', $user->username) }}" autocomplete="username" data-edit-input hidden>
-              @error("username") <p class="profile-error">{{ $message }}</p> @enderror
-            </div>
-            <div class="profile-field">
-              <span class="profile-label">Password</span>
-              <div class="profile-value" aria-label="Password is hidden">••••••••••••</div>
-              <p class="profile-note">Use the Change Password option below to update your password.</p>
+            <div class="login-fields">
+              <div class="profile-field">
+                <span class="profile-label">Email Address</span>
+                <div class="profile-value">{{ $user->email }}</div>
+                <input name="email" type="hidden" value="{{ $user->email }}">
+                @error("email") <p class="profile-error">{{ $message }}</p> @enderror
+              </div>
+              <div class="profile-field">
+                <span class="profile-label">Password</span>
+                <div class="profile-value" aria-label="Password is hidden">************</div>
+              </div>
             </div>
           </section>
 
           <section class="profile-card" aria-labelledby="personal-info-title">
             <h2 id="personal-info-title" class="heading-04">Personal Info</h2>
             <div class="personal-fields">
-              @foreach (["fullname" => ["Name", "name"], "nric" => ["IC Number", "off"], "email" => ["Email Address", "email"], "contact" => ["Telephone Number", "tel"]] as $field => [$label, $autocomplete])
+              @foreach (["username" => ["Username", "username"], "fullname" => ["Fullname", "name"], "nric" => ["NRIC", "off"], "contact" => ["Contact", "tel"]] as $field => [$label, $autocomplete])
                 <div class="profile-field">
                   <label for="{{ $field }}">{{ $label }}</label>
                   <div class="profile-value" data-view-value="{{ $field }}">{{ $user->{$field} }}</div>
-                  <input id="{{ $field }}" name="{{ $field }}" type="{{ $field === 'email' ? 'email' : 'text' }}" value="{{ old($field, $user->{$field}) }}" autocomplete="{{ $autocomplete }}" data-edit-input hidden>
+                  <input id="{{ $field }}" name="{{ $field }}" type="text" value="{{ old($field, $user->{$field}) }}" autocomplete="{{ $autocomplete }}" data-edit-input hidden>
                   @error($field) <p class="profile-error">{{ $message }}</p> @enderror
                 </div>
               @endforeach
@@ -108,3 +109,6 @@
     </div>
   </div>
 @endsection
+
+
+

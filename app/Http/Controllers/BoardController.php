@@ -21,14 +21,10 @@ class BoardController extends Controller {
             ->get()
             ->map(fn($subtask) => $this->formatTaskData($subtask, "subtask"));
 
-        $priorityOrder = ['high' => 1, 'medium' => 2, 'low' => 3];
+        $today = today()->startOfDay();
         $boardItems = $tasksRawData
             ->concat($subTasksRawData)
-            ->sortBy([
-                fn($item) => $priorityOrder[$item["priority"] ?? ""] ?? 4,
-                fn($item) => $item["due_date"]?->timestamp ?? PHP_INT_MAX,
-                fn($item) => $item["id"],
-            ])
+            ->sort(fn($left, $right) => $this->compareBoardItems($left, $right, $today))
             ->values();
 
         $tasks = [
@@ -48,14 +44,44 @@ class BoardController extends Controller {
                 "createdDate" => $item["createdDate"],
                 "dueDate" => $item["dueDate"],
                 "status" => $item["status"],
-                "priority" => $item["priority"] ?? "medium",
+                "priority" => $item["priority"] ?? "",
                 "assignee_id" => $item["assignee_id"],
                 "updateUrl" => $item["updateUrl"],
             ])
             ->values()
             ->all();
-
         return view("pages.board", compact("tasks", "calendarTasks"));
+    }
+
+    private function compareBoardItems(array $left, array $right, $today): int {
+        $priorityComparison = $this->priorityRank($left["priority"] ?? null) <=> $this->priorityRank($right["priority"] ?? null);
+        if ($priorityComparison !== 0) {
+            return $priorityComparison;
+        }
+
+        $dueDateComparison = $this->dueDateRank($left["due_date"] ?? null, $today) <=> $this->dueDateRank($right["due_date"] ?? null, $today);
+        if ($dueDateComparison !== 0) {
+            return $dueDateComparison;
+        }
+
+        return ($right["id"] ?? 0) <=> ($left["id"] ?? 0);
+    }
+
+    private function priorityRank(?string $priority): int {
+        return match (strtolower(trim((string) $priority))) {
+            "high" => 1,
+            "medium" => 2,
+            "low" => 3,
+            default => 4,
+        };
+    }
+
+    private function dueDateRank($dueDate, $today): int {
+        if ($dueDate === null) {
+            return PHP_INT_MAX;
+        }
+
+        return (int) $dueDate->copy()->startOfDay()->diffInDays($today, true);
     }
 
     private function formatTaskData($item, string $type): array {
@@ -69,7 +95,7 @@ class BoardController extends Controller {
             "description" => $project?->description,
             "assignee_id" => $item->assignee_id,
             "assignee_name" => $item->assignee?->username,
-            "priority" => $item->priority ?? "medium",
+            "priority" => $item->priority ?? "",
             "status" => $item->status,
             "due_date" => $item->due_date,
             "dueDate" => $item->due_date?->toDateString(),
@@ -87,3 +113,6 @@ class BoardController extends Controller {
         ];
     }
 }
+
+
+

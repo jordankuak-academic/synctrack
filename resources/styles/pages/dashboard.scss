@@ -7,6 +7,7 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   height: 100%;
   max-height: 100%;
   min-height: 0;
+  padding:16px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
@@ -263,12 +264,18 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   }
 
   .graph-axis-label,
+  .graph-axis-title,
   .graph-member-label,
   .graph-value-label {
     fill: $neutral-600;
     font-family: $font-family;
     font-size: 12px;
     font-weight: 700;
+  }
+
+  .graph-axis-title {
+    fill: $neutral-500;
+    font-weight: 600;
   }
 
   .graph-value-label {
@@ -278,6 +285,12 @@ $panel-shadow: 0 16px 36px rgba(17, 19, 26, 0.08);
   .graph-empty {
     color: $neutral-500;
     font-size: 14px;
+  }
+
+  .priority-badge.default,
+  .task-priority-select.default {
+    background-color: $neutral-200;
+    color: $neutral-700;
   }
 
   @media (max-width: 1180px) {

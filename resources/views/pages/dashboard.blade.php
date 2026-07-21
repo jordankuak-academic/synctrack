@@ -11,7 +11,7 @@
         "meta" => "Created by you",
         "icon" => "folder-kanban",
         "tone" => "primary",
-        "href" => null,
+        "href" => route("project"),
       ],
       [
         "label" => "Member Projects",
@@ -19,7 +19,7 @@
         "meta" => "Shared or assigned to you",
         "icon" => "users",
         "tone" => "neutral",
-        "href" => null,
+        "href" => route("project"),
       ],
       [
         "label" => "Completed Projects",
@@ -44,7 +44,6 @@
     <header class="page-header dashboard-header">
       <div>
         <h1 class="heading-01">Dashboard</h1>
-        <p class="body-s">Project overview and member task distribution.</p>
       </div>
     </header>
 
@@ -70,63 +69,20 @@
         @endforeach
       </section>
 
-      <section class="dashboard-overview-grid">
-        <article class="dashboard-panel project-count-panel">
-          <div class="panel-heading">
-            <div>
-              <h2 class="heading-04">Project Count Summary</h2>
-              <p class="body-s">Projects are scoped to work you own, joined, or are assigned to.</p>
-            </div>
-            <strong>{{ $summary["total_projects"] }}</strong>
-          </div>
-
-          <div class="project-ratio-list">
-            <div>
-              <span>Owned Projects</span>
-              <strong>{{ $summary["owned_projects"] }}</strong>
-            </div>
-            <div>
-              <span>Member Projects</span>
-              <strong>{{ $summary["member_projects"] }}</strong>
-            </div>
-          </div>
-        </article>
-
-        <article class="dashboard-panel project-status-panel">
-          <div class="panel-heading">
-            <div>
-              <h2 class="heading-04">Project Status Summary</h2>
-              <p class="body-s">Completed projects have all tasks and subtasks marked completed.</p>
-            </div>
-          </div>
-
-          <div class="status-summary-list">
-            <a href="{{ route("project") }}" class="status-summary-card status-summary-card--completed">
-              <span>Completed</span>
-              <strong>{{ $summary["completed_projects"] }}</strong>
-            </a>
-            <a href="{{ route("project") }}" class="status-summary-card status-summary-card--progress">
-              <span>In Progress</span>
-              <strong>{{ $summary["in_progress_projects"] }}</strong>
-            </a>
-          </div>
-        </article>
-      </section>
-
       <section class="dashboard-panel graph-panel" aria-labelledby="member-task-graph-title">
         <div class="panel-heading graph-heading">
           <div>
             <h2 id="member-task-graph-title" class="heading-04">Member Task Count</h2>
-            <p class="body-s">Line graph showing parent task assignments for the selected project.</p>
+            <p class="body-s">Line graph showing task and subtask assignments for the selected project.</p>
           </div>
 
           <label class="project-select-field" for="dashboard-project-select">
             <span>Project</span>
             <select id="dashboard-project-select" data-project-stat-select @disabled(empty($projectMemberTaskStats))>
               @forelse ($projectMemberTaskStats as $project)
-                <option value="{{ $project["project_id"] }}">{{ $project["project_name"] }}</option>
+                <option value="{{ $project["project_id"] }}" data-members='@json($project["members"], JSON_HEX_APOS)'>{{ $project["project_name"] }}</option>
               @empty
-                <option>No project data</option>
+                <option>No project available</option>
               @endforelse
             </select>
           </label>
