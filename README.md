@@ -168,4 +168,4 @@ logs, workload summary, or sprint view, together with quality improvements and i
 
 - **Features:** Completed user validation for action permissions, added dashboard page to display the analytics details for respective users.
 - **Enhancements:** User interface improvements, move old dashboard features to "Tasks" page, and added new features such as User profile page, analytics dashboard, and task/subtask in board or calendar view.
-- **Bug Fixes:** None (the latest version of iteration 3 in release tag `v3.1.0`).
+- **Bug Fixes:** None (the latest version of iteration 3 in release tag `v3.2.0`).
