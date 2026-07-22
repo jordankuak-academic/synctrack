@@ -17,7 +17,7 @@ class Task extends Model {
             "project_id" => "integer",
             "assignee_id" => "integer",
             "title" => "string",
-            "due_date" => "datetime",
+            "due_date" => "date",
             "priority" => "string",
             "status" => "string",
         ];
