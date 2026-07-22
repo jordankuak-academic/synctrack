@@ -147,7 +147,7 @@
                         $assignee = collect($project['members'] ?? [])->firstWhere('id', $task['assignee_id'] ?? null);
                         $completedSubTasks = collect($subTasks)->where('status', 'completed')->count();
                       @endphp
-                      <div class="task-row" data-task-id="{{ $task['id'] }}" data-task-title="{{ $task['title'] }}" data-assignee-id="{{ $task['assignee_id'] ?? '' }}" data-assignee-name="{{ $assignee['username'] ?? '' }}" data-due-date="{{ !empty($task['due_date']) ? substr($task['due_date'], 0, 10) : '' }}" data-priority="{{ $taskPriority }}" data-status="{{ $taskStatus }}">
+                      <div class="task-row" data-task-id="{{ $task['id'] }}" data-task-title="{{ $task['title'] }}" data-assignee-id="{{ $task['assignee_id'] ?? '' }}" data-assignee-name="{{ $assignee['username'] ?? '' }}" data-due-date="{{ $task['due_date_display'] ?? '' }}" data-priority="{{ $taskPriority }}" data-status="{{ $taskStatus }}">
                         <div class="status-column">
                           @if (count($subTasks) > 0)
                             <button type="button" class="task-expand" data-task-id="{{ $task['id'] }}" aria-label="Expand {{ $task['title'] }}">&#8250;</button>
@@ -174,7 +174,7 @@
                         </div>
                         
                         <div class="date-column helper-text">
-                          <input class="task-inline-input task-date-input{{ !empty($task['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($task['due_date']) ? substr($task['due_date'], 0, 10) : '' }}" data-task-id="{{ $task['id'] }}" aria-label="Edit due date for {{ $task['title'] }}" @disabled(!$canManageProject)>
+                          <input class="task-inline-input task-date-input{{ !empty($task['due_date_display']) ? ' has-value' : '' }}" type="date" value="{{ $task['due_date_display'] ?? '' }}" data-task-id="{{ $task['id'] }}" aria-label="Edit due date for {{ $task['title'] }}" @disabled(!$canManageProject)>
                         </div>
                         
                         <div class="priority-column">
@@ -207,7 +207,7 @@
                           $subTaskPriority = ucfirst($subTask['priority'] ?? '');
                           $subTaskAssignee = collect($project['members'] ?? [])->firstWhere('id', $subTask['assignee_id'] ?? null);
                         @endphp
-                        <div class="task-row subtask-row" data-parent-task-id="{{ $task['id'] }}" data-task-id="{{ $subTask['id'] }}" data-task-title="{{ $subTask['title'] }}" data-assignee-id="{{ $subTask['assignee_id'] ?? '' }}" data-assignee-name="{{ $subTaskAssignee['username'] ?? '' }}" data-due-date="{{ !empty($subTask['due_date']) ? substr($subTask['due_date'], 0, 10) : '' }}" data-priority="{{ $subTaskPriority }}" data-status="{{ $subTaskStatus }}" hidden>
+                        <div class="task-row subtask-row" data-parent-task-id="{{ $task['id'] }}" data-task-id="{{ $subTask['id'] }}" data-task-title="{{ $subTask['title'] }}" data-assignee-id="{{ $subTask['assignee_id'] ?? '' }}" data-assignee-name="{{ $subTaskAssignee['username'] ?? '' }}" data-due-date="{{ $subTask['due_date_display'] ?? '' }}" data-priority="{{ $subTaskPriority }}" data-status="{{ $subTaskStatus }}" hidden>
                           <div class="status-column">
                             <button type="button" class="task-status {{ $subTaskStatus }}" data-task-id="{{ $subTask['id'] }}" aria-label="{{ $subTask['title'] }}: {{ $subTaskStatusLabel }}">
                               @if ($subTaskStatus === 'assigned')
@@ -231,7 +231,7 @@
                           </div>
                           
                           <div class="date-column helper-text">
-                            <input class="task-inline-input task-date-input{{ !empty($subTask['due_date']) ? ' has-value' : '' }}" type="date" value="{{ !empty($subTask['due_date']) ? substr($subTask['due_date'], 0, 10) : '' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Edit due date for {{ $subTask['title'] }}" @disabled(!$canManageProject)>
+                            <input class="task-inline-input task-date-input{{ !empty($subTask['due_date_display']) ? ' has-value' : '' }}" type="date" value="{{ $subTask['due_date_display'] ?? '' }}" data-task-id="{{ $subTask['id'] }}" aria-label="Edit due date for {{ $subTask['title'] }}" @disabled(!$canManageProject)>
                           </div>
                           
                           <div class="priority-column">

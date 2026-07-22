@@ -61,6 +61,7 @@ class ProjectController extends Controller {
 
                 unset($project->members, $project->creator);
 
+                $project->setRelation("tasks", $project->tasks->map(fn($task) => $this->serializeTaskForProjectView($task))->values());
                 $project->members = $members;
                 $project->can_manage = $canManageProject;
                 $project->ownership_label = $ownershipLabel;
@@ -164,6 +165,19 @@ class ProjectController extends Controller {
         return redirect()
             ->action([ProjectController::class, "index"])
             ->with("response", $this->successResponse("Project Voided Successfully!"));
+    }
+
+    private function serializeTaskForProjectView($task) {
+        $task->due_date_display = $task->due_date?->toDateString();
+        $task->setRelation("subTasks", $task->subTasks->map(fn($sub_task) => $this->serializeSubTaskForProjectView($sub_task))->values());
+
+        return $task;
+    }
+
+    private function serializeSubTaskForProjectView($sub_task) {
+        $sub_task->due_date_display = $sub_task->due_date?->toDateString();
+
+        return $sub_task;
     }
 
     private function unauthorizedRedirect(): RedirectResponse {
