@@ -160,7 +160,7 @@ class DashboardController extends Controller {
                     $is_overdue = false;
                     
                     if ($item->due_date && $status != "completed") {
-                        $is_overdue = now()->gt($item->due_date);
+                        $is_overdue = $item->due_date->copy()->startOfDay()->lt(today()->startOfDay());
                     }
                     
                     if ($status == "completed") {
